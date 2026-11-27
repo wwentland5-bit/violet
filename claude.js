@@ -8,6 +8,37 @@
 // the command line (no quoting bugs, no command injection).
 // ============================================================
 const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+/**
+ * Pick the Claude Code program to run.
+ * 1. The path in Settings, if that file really exists.
+ * 2. Otherwise the usual install spots (the official installer first), so a
+ *    stale setting, like an uninstalled npm copy, never breaks Violet.
+ * 3. Otherwise plain "claude" from PATH.
+ */
+function resolveClaudePath(setting) {
+  const safe = (s) => typeof s === 'string' && s && !/["&|<>^%]/.test(s); // no shell syntax
+  const exists = (f) => { try { return fs.statSync(f).isFile(); } catch { return false; } };
+  const p = String(setting || '').trim();
+  const isPath = /[\\/]/.test(p);
+  if (safe(p) && isPath && exists(p)) return p;
+
+  const home = os.homedir();
+  const candidates = process.platform === 'win32'
+    ? [
+        path.join(home, '.local', 'bin', 'claude.exe'),                       // official installer
+        path.join(process.env.LOCALAPPDATA || '', 'Programs', 'claude', 'claude.exe'),
+        path.join(process.env.APPDATA || '', 'npm', 'claude.cmd')             // npm install
+      ]
+    : [path.join(home, '.local', 'bin', 'claude'), '/usr/local/bin/claude', '/opt/homebrew/bin/claude'];
+  for (const c of candidates) if (safe(c) && exists(c)) return c;
+
+  // A bare command name from Settings (like "claude") still works through PATH.
+  return safe(p) && !isPath ? p : 'claude';
+}
 
 // Tools Violet never lets Claude use on its own: these change files or run commands.
 const ALWAYS_BLOCKED = 'Bash,Edit,Write,NotebookEdit';
@@ -69,8 +100,7 @@ class ClaudeBridge {
   }
 
   command() {
-    const p = String(this.getSettings().claudePath || 'claude').trim();
-    if (/["&|<>^%]/.test(p)) return 'claude'; // never let the setting inject shell syntax
+    const p = resolveClaudePath(this.getSettings().claudePath);
     return p.includes(' ') ? `"${p}"` : p;
   }
 
