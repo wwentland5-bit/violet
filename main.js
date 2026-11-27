@@ -186,7 +186,8 @@ let themeWatchTimer = null;
 // ============================================================
 function loadSettings() {
   try {
-    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    // Strip a BOM: Windows PowerShell 5 adds one when it saves files, and JSON.parse chokes on it
+    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8').replace(/^\uFEFF/, ''));
     const merged = { ...DEFAULT_SETTINGS, ...raw };
     if (!Array.isArray(merged.prompts) || merged.prompts.length === 0) merged.prompts = DEFAULT_PROMPTS;
     merged.widgets = { ...DEFAULT_SETTINGS.widgets, ...(raw.widgets || {}) }; // keep new widget types

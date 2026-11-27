@@ -117,9 +117,10 @@ function Test-RealClaude($path) {
 function Find-RealClaude {
   $candidates = @()
   foreach ($c in (Get-Command claude -All -ErrorAction SilentlyContinue)) { if ($c.Source) { $candidates += $c.Source } }
+  # The official installer's location goes first: it's the one npm can't break
+  $candidates = @((Join-Path $env:USERPROFILE '.local\bin\claude.exe')) + $candidates
   $candidates += @(
     (Join-Path $env:APPDATA 'npm\claude.cmd'),
-    (Join-Path $env:USERPROFILE '.local\bin\claude.exe'),
     (Join-Path $env:LOCALAPPDATA 'Programs\claude\claude.exe')
   )
   foreach ($p in ($candidates | Select-Object -Unique)) {
@@ -208,17 +209,27 @@ if ($ClaudeExe) {
 } else {
   $other = Get-Command claude -ErrorAction SilentlyContinue
   if ($other) { Warn "The 'claude' command on this PC is NOT Claude Code (it points to $($other.Source)). Installing the real one..." }
-  Info 'Installing Claude Code...'
+  # A broken npm copy (newer npm blocks the install script that copies the real claude.exe,
+  # so Windows says "not compatible") gets removed first so it can't shadow the good one.
+  $npmClaude = Join-Path $env:APPDATA 'npm\node_modules\@anthropic-ai\claude-code'
+  if (Test-Path $npmClaude) {
+    Info 'Removing a broken npm copy of Claude Code...'
+    try { & npm uninstall -g @anthropic-ai/claude-code 2>$null | Out-Null } catch { }
+  }
+  # Official Windows installer first: it doesn't depend on npm, so npm can't break it
+  Info 'Installing Claude Code with the official Windows installer...'
   try {
-    & npm install -g @anthropic-ai/claude-code
+    Invoke-Expression (Invoke-RestMethod -Uri 'https://claude.ai/install.ps1' -UseBasicParsing)
     Refresh-Path
-  } catch { Warn "npm install of Claude Code failed: $($_.Exception.Message)" }
+  } catch { Warn "Official installer failed: $($_.Exception.Message)" }
   if (-not (Find-RealClaude)) {
-    Info 'Trying the official Windows installer instead...'
+    Info 'Trying npm instead (with its install script allowed)...'
     try {
-      Invoke-Expression (Invoke-RestMethod -Uri 'https://claude.ai/install.ps1' -UseBasicParsing)
+      & npm install -g @anthropic-ai/claude-code --foreground-scripts
+      $installCjs = Join-Path $npmClaude 'install.cjs'
+      if (Test-Path $installCjs) { Push-Location $npmClaude; & node install.cjs; Pop-Location }
       Refresh-Path
-    } catch { Warn "Official installer failed: $($_.Exception.Message)" }
+    } catch { Warn "npm install of Claude Code failed: $($_.Exception.Message)" }
   }
   $ClaudeExe = Find-RealClaude
   if ($ClaudeExe) { Ok "Claude Code installed: $ClaudeExe" }
