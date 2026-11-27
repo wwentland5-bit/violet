@@ -1,4 +1,3 @@
-- Rearrange the dashboard: drag any widget by its title bar and drop it where you want it
-- Violet can move widgets too: "put the timer first", "move the video next to my notes"
-- Keyboard: focus a widget's button and press Alt+Left or Alt+Right
-- Moving a widget no longer restarts a playing video
+- Fixed: browser tabs can be closed again with the × button (also middle-click and Ctrl+W)
+- Fixed: desktop widgets (clock, system, weather, notes, servers) can be dragged reliably
+- Dashboard: dragging a widget no longer snaps back if the board updates mid-drag

@@ -14,10 +14,13 @@ svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width:
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--panel-bg);
-  -webkit-app-region: drag;            /* drag the widget anywhere */
+  cursor: grab;                        /* drag the widget anywhere (see widget-renderer.js) */
+  touch-action: none;
 }
-.widget.locked { -webkit-app-region: no-drag; }
-button, textarea, input { -webkit-app-region: no-drag; }
+.widget.dragging { cursor: grabbing; }
+.widget.locked { cursor: default; }
+button, textarea, input, select, a { cursor: auto; }
+button { cursor: pointer; }
 
 .head { display: flex; align-items: center; justify-content: space-between; height: 18px; margin-bottom: 6px; }
 .label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); }

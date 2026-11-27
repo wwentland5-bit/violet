@@ -7,38 +7,64 @@ const address = $('address');
 let state = { tabs: [], activeId: null };
 let editing = false; // don't overwrite the address bar while you're typing
 
+// Tabs are updated IN PLACE (keyed by id). Rebuilding them on every state
+// update destroyed the × button between mouse-down and mouse-up, so its
+// click never fired and tabs couldn't be closed.
+const tabEls = new Map(); // id -> { el, fav, favKey, title, x }
+
+function makeTab(id) {
+  const el = document.createElement('div');
+  el.className = 'tab';
+  const title = document.createElement('span');
+  title.className = 'title';
+  const x = document.createElement('button');
+  x.className = 'x';
+  x.title = 'Close tab (Ctrl+W)';
+  x.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  // Close on click; mousedown on × must NOT also activate the tab
+  x.addEventListener('mousedown', (e) => e.stopPropagation());
+  x.addEventListener('click', (e) => { e.stopPropagation(); window.vbrowser.closeTab(id); });
+  el.addEventListener('mousedown', (e) => {
+    if (e.button === 1) { e.preventDefault(); window.vbrowser.closeTab(id); } // middle-click closes
+    else if (e.button === 0) window.vbrowser.activate(id);
+  });
+  el.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); }); // no autoscroll icon
+  const fav = document.createElement('span');
+  fav.className = 'fav';
+  el.append(fav, title, x);
+  return { el, fav, favKey: '', title, x };
+}
+
 function renderTabs() {
-  tabsEl.innerHTML = '';
-  for (const t of state.tabs) {
-    const el = document.createElement('div');
-    el.className = 'tab' + (t.id === state.activeId ? ' active' : '');
-    el.title = t.title;
-
-    let fav;
-    if (t.favicon && !t.loading && /^https?:|^data:/.test(t.favicon)) {
-      fav = document.createElement('img');
-      fav.src = t.favicon;
-      fav.onerror = () => fav.replaceWith(Object.assign(document.createElement('span'), { className: 'fav' }));
-    } else {
-      fav = document.createElement('span');
-      fav.className = 'fav' + (t.loading ? ' loading' : '');
+  const seen = new Set();
+  state.tabs.forEach((t, i) => {
+    seen.add(t.id);
+    let r = tabEls.get(t.id);
+    if (!r) { r = makeTab(t.id); tabEls.set(t.id, r); }
+    r.el.classList.toggle('active', t.id === state.activeId);
+    r.el.title = t.title || '';
+    const name = t.title || 'New tab';
+    if (r.title.textContent !== name) r.title.textContent = name;
+    // Favicon: only swap the element when it actually changes
+    const useImg = t.favicon && !t.loading && /^https?:|^data:/.test(t.favicon);
+    const key = useImg ? `img:${t.favicon}` : (t.loading ? 'loading' : 'blank');
+    if (key !== r.favKey) {
+      let fav;
+      if (useImg) {
+        fav = document.createElement('img');
+        fav.src = t.favicon;
+        fav.onerror = () => fav.replaceWith(Object.assign(document.createElement('span'), { className: 'fav' }));
+      } else {
+        fav = document.createElement('span');
+        fav.className = 'fav' + (t.loading ? ' loading' : '');
+      }
+      r.fav.replaceWith(fav);
+      r.fav = fav;
+      r.favKey = key;
     }
-    const title = document.createElement('span');
-    title.className = 'title';
-    title.textContent = t.title || 'New tab';
-    const x = document.createElement('button');
-    x.className = 'x';
-    x.title = 'Close tab (Ctrl+W)';
-    x.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-    x.addEventListener('click', (e) => { e.stopPropagation(); window.vbrowser.closeTab(t.id); });
-
-    el.append(fav, title, x);
-    el.addEventListener('mousedown', (e) => {
-      if (e.button === 1) { e.preventDefault(); window.vbrowser.closeTab(t.id); } // middle-click closes
-      else if (e.button === 0) window.vbrowser.activate(t.id);
-    });
-    tabsEl.append(el);
-  }
+    if (tabsEl.children[i] !== r.el) tabsEl.insertBefore(r.el, tabsEl.children[i] || null);
+  });
+  for (const [id, r] of tabEls) if (!seen.has(id)) { r.el.remove(); tabEls.delete(id); }
 }
 
 function renderNav() {

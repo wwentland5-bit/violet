@@ -315,6 +315,30 @@ class WidgetManager {
       if (type === 'weather') this.geo = null;
       if (type) this.refresh(type);
     });
+    // Dragging: the widget tells us where the pointer is on screen and we move
+    // the window by the same amount. (CSS "app-region: drag" is unreliable on
+    // transparent windows in Windows, so widgets couldn't always be moved.)
+    const drags = new Map(); // type -> { px, py, wx, wy }
+    ipcMain.on('widget:drag-start', (e, x, y) => {
+      const type = this.typeOf(e.sender);
+      if (!type || this.getSettings().widgetsLocked || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      const [wx, wy] = this.windows[type].getPosition();
+      drags.set(type, { px: x, py: y, wx, wy });
+    });
+    ipcMain.on('widget:drag-move', (e, x, y) => {
+      const type = this.typeOf(e.sender);
+      const d = type && drags.get(type);
+      if (!d || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      this.windows[type].setPosition(Math.round(d.wx + x - d.px), Math.round(d.wy + y - d.py));
+    });
+    ipcMain.on('widget:drag-end', (e) => {
+      const type = this.typeOf(e.sender);
+      if (!type || !drags.delete(type)) return;
+      const [x, y] = this.windows[type].getPosition();
+      const s = this.getSettings();
+      s.widgetPositions = { ...(s.widgetPositions || {}), [type]: { x, y } };
+      this.saveSettings();
+    });
     ipcMain.on('widget:hide', (e) => {
       const type = this.typeOf(e.sender);
       if (!type) return;

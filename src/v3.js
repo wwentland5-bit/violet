@@ -580,7 +580,9 @@ function renderWidgets(list) {
     // Position with CSS order instead of moving the element: moving an iframe
     // in the page reloads it, which would restart a playing video.
     if (!entry.el.isConnected) grid.append(entry.el);
-    entry.el.style.order = String(i);
+    // While you're dragging, the drag owns the order (a background update
+    // mid-drag would otherwise snap widgets back)
+    if (!document.body.classList.contains('dragging-widget')) entry.el.style.order = String(i);
   });
   for (const [id, entry] of widgetEls) if (!seen.has(id)) { entry.el.remove(); widgetEls.delete(id); }
   $('dash-empty').hidden = list.length > 0;

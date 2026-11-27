@@ -111,6 +111,31 @@ function renderServers(d) {
 
 const RENDER = { system: renderSystem, weather: renderWeather, servers: renderServers };
 
+// ---------- Drag the widget window ----------
+// Pointer capture keeps the moves coming even when the pointer leaves the
+// small window during a fast drag. Buttons and text fields keep working.
+(function setupDrag() {
+  const box = $('widget');
+  let dragging = false;
+  box.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || options.locked || e.target.closest('button, textarea, input, select, a')) return;
+    dragging = true;
+    box.setPointerCapture(e.pointerId);
+    box.classList.add('dragging');
+    window.vwidget.dragStart(e.screenX, e.screenY);
+  });
+  box.addEventListener('pointermove', (e) => { if (dragging) window.vwidget.dragMove(e.screenX, e.screenY); });
+  const end = () => {
+    if (!dragging) return;
+    dragging = false;
+    box.classList.remove('dragging');
+    window.vwidget.dragEnd();
+  };
+  box.addEventListener('pointerup', end);
+  box.addEventListener('pointercancel', end);
+  box.addEventListener('lostpointercapture', end);
+})();
+
 function applyOptions(o) {
   options = { ...options, ...o };
   $('widget').classList.toggle('locked', !!options.locked);
