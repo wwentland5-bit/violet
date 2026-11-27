@@ -4,7 +4,7 @@
 // Downloads what the voice features need, straight into Violet's
 // own folders, so you never have to run setup.bat or unzip things:
 //   • whisper.cpp  (speech recognition program, ~4 MB zip)
-//   • ggml-base.en.bin  (English speech model, ~148 MB)
+//   • ggml-base.en-q5_1.bin  (compressed English speech model, ~57 MB)
 //   • Piper        (custom-voice program, ~20 MB zip)
 //   • Amy          (a natural US English voice, ~63 MB)
 // Anything already installed is skipped.
@@ -17,8 +17,11 @@ const fs = require('fs');
 const path = require('path');
 
 const URLS = {
-  whisperZip: 'https://github.com/ggml-org/whisper.cpp/releases/latest/download/whisper-bin-x64.zip',
-  whisperModel: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin',
+  // whisper.cpp's newest tagged releases (v1.9.4+) ship no files, so "latest" 404s.
+  // Try known-good versions in order instead.
+  whisperZips: ['v1.9.2', 'v1.9.1', 'v1.9.0', 'v1.8.2']
+    .map(v => `https://github.com/ggml-org/whisper.cpp/releases/download/${v}/whisper-bin-x64.zip`),
+  whisperModel: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en-q5_1.bin',
   piperZip: 'https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip',
   // Voices are pinned to the v1.0.0 tag. Newer voice files on "main" were retrained
   // for Piper 1.5+ (combined sounds like "aɪ") and mispronounce words in the Piper
@@ -144,7 +147,12 @@ async function installVoiceFeatures(voice, onProgress = () => {}) {
 
   if (!st.whisper) {
     const zip = path.join(tmp, 'whisper-bin-x64.zip');
-    await download(URLS.whisperZip, zip, step('Downloading speech recognition'));
+    let lastErr;
+    for (const url of URLS.whisperZips) {
+      try { await download(url, zip, step('Downloading speech recognition')); lastErr = null; break; }
+      catch (err) { lastErr = err; }
+    }
+    if (lastErr) throw lastErr;
     onProgress({ step: 'Unpacking speech recognition', percent: 100 });
     await unzip(zip, whisperDir);
     fs.rmSync(zip, { force: true });
@@ -152,7 +160,7 @@ async function installVoiceFeatures(voice, onProgress = () => {}) {
     done.push('speech recognition');
   }
   if (!voice.listModels().length) {
-    await download(URLS.whisperModel, path.join(whisperDir, 'ggml-base.en.bin'), step('Downloading English speech model'));
+    await download(URLS.whisperModel, path.join(whisperDir, 'ggml-base.en-q5_1.bin'), step('Downloading English speech model'));
     done.push('speech model');
   }
   if (!st.piper) {

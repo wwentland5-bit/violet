@@ -27,9 +27,9 @@ try { Start-Transcript -Path $Log -Force | Out-Null } catch { }
 
 # ---------- Download links (edit here if a link ever moves) ----------
 $Urls = @{
-  WhisperZip  = 'https://github.com/ggml-org/whisper.cpp/releases/latest/download/whisper-bin-x64.zip'
-  ModelBase   = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin'
-  ModelTiny   = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin'
+  # whisper.cpp's newest tagged releases ship no files, so "latest" 404s: try known-good versions
+  WhisperZips = @('v1.9.2', 'v1.9.1', 'v1.9.0', 'v1.8.2') | ForEach-Object { "https://github.com/ggml-org/whisper.cpp/releases/download/$_/whisper-bin-x64.zip" }
+  ModelBase   = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en-q5_1.bin'
   PiperZip    = 'https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip'
   VoiceOnnx   = 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx'
   VoiceJson   = 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx.json'
@@ -328,12 +328,16 @@ if ($wantVoice) {
     if (Find-File $whisperDir 'whisper-cli.exe') { Ok 'whisper.cpp already installed' }
     else {
       $zip = Join-Path $env:TEMP 'violet-whisper.zip'
-      Download $Urls.WhisperZip $zip
+      $got = $false
+      foreach ($u in $Urls.WhisperZips) {
+        try { Download $u $zip; $got = $true; break } catch { Warn "Not available: $u" }
+      }
+      if (-not $got) { throw 'Could not download whisper.cpp from any known version' }
       Expand-Archive -Path $zip -DestinationPath $whisperDir -Force
       Remove-Item $zip -ErrorAction SilentlyContinue
       if (Find-File $whisperDir 'whisper-cli.exe') { Ok 'whisper.cpp installed' } else { throw 'whisper-cli.exe not found after unzip' }
     }
-    foreach ($m in @(@{ Name = 'ggml-base.en.bin'; Url = $Urls.ModelBase }, @{ Name = 'ggml-tiny.en.bin'; Url = $Urls.ModelTiny })) {
+    foreach ($m in @(@{ Name = 'ggml-base.en-q5_1.bin'; Url = $Urls.ModelBase })) {
       $dest = Join-Path $whisperDir $m.Name
       if (Test-Path $dest) { Ok "$($m.Name) already downloaded" } else { Download $m.Url $dest; Ok "$($m.Name) downloaded" }
     }
@@ -357,7 +361,7 @@ if ($wantVoice) {
 
   # Point Violet at what we installed (only where you haven't picked something already)
   try {
-    $vals = @{ sttModel = 'ggml-base.en.bin'; piperVoice = 'en_US-amy-medium.onnx' }
+    $vals = @{ sttModel = 'ggml-base.en-q5_1.bin'; piperVoice = 'en_US-amy-medium.onnx' }
     if (Find-File $piperDir 'piper.exe') { $vals.ttsEngine = 'piper' }
     Set-VioletSettings $vals @('sttModel', 'piperVoice', 'ttsEngine')
     Ok 'Violet settings updated (speech model + voice)'

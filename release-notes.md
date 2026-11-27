@@ -1,2 +1,2 @@
-- Fixed Piper mispronouncing words ("Righte" instead of "right")
-- Violet now swaps newer voice files for the original versions its voice engine was built for, automatically, in the background
+- Fixed "Download voice features" failing to get speech recognition (whisper.cpp changed where it publishes Windows files)
+- Smaller default speech model: base.en-q5_1 (57 MB) instead of 148 MB, nearly the same accuracy
