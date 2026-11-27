@@ -1114,6 +1114,12 @@ if (!app.requestSingleInstanceLock()) {
       emit: emitChat
     });
     voice = new VoiceEngines({ userDir: USER_DIR });
+    // Quietly swap Piper 1.5+ voices for versions this Piper pronounces right
+    setTimeout(() => {
+      require('./voice-setup').repairVoices(voice)
+        .then((fixed) => { if (fixed.length) send('voice:install-progress', { step: `Voice fixed: ${fixed.join(', ')}`, percent: 100 }); })
+        .catch(() => {});
+    }, 5000);
     chats = new ChatStore({ userDir: USER_DIR });
     memory = new MemoryStore({ userDir: USER_DIR });
     projects = new Projects({ userDir: USER_DIR, getSettings: () => settings, saveSettings });

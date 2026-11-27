@@ -20,9 +20,68 @@ const URLS = {
   whisperZip: 'https://github.com/ggml-org/whisper.cpp/releases/latest/download/whisper-bin-x64.zip',
   whisperModel: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin',
   piperZip: 'https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip',
-  voiceOnnx: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx',
-  voiceJson: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json'
+  // Voices are pinned to the v1.0.0 tag. Newer voice files on "main" were retrained
+  // for Piper 1.5+ (combined sounds like "aɪ") and mispronounce words in the Piper
+  // program Violet uses ("Righte" instead of "right").
+  voiceOnnx: voiceUrl('en_US-amy-medium.onnx'),
+  voiceJson: voiceUrl('en_US-amy-medium.onnx.json')
 };
+
+/**
+ * Hugging Face v1.0.0 address for a standard Piper voice file name,
+ * e.g. en_US-amy-medium.onnx -> .../v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx
+ * Returns null for names that don't follow the lang_REGION-name-quality pattern.
+ */
+function voiceUrl(fileName) {
+  const m = /^(([a-z]{2,3})_[A-Z]{2})-([\w]+)-(x_low|low|medium|high)\.onnx(\.json)?$/.exec(fileName);
+  if (!m) return null;
+  const [, locale, family, name, quality] = m;
+  return `https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/${family}/${locale}/${name}/${quality}/${fileName}`;
+}
+
+/** True if a voice config was made for Piper 1.5+ (has combined-sound keys like "aɪ"). */
+function needsOldVersion(configFile) {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(configFile, 'utf8').replace(/^\uFEFF/, ''));
+    return Object.keys(cfg.phoneme_id_map || {}).some(k => [...k].length !== 1);
+  } catch { return false; }
+}
+
+/**
+ * Swap newer (Piper 1.5+) voices for their original v1.0.0 versions, which the
+ * Piper program Violet uses pronounces correctly. Runs quietly at startup.
+ * Voices that have no v1.0.0 version are left alone (Violet still cleans their
+ * config so they don't crash). Returns the ids of the voices replaced.
+ */
+async function repairVoices(voice) {
+  const fixed = [];
+  const skipFile = path.join(voice.tmpDir, 'voice-repair-skip.json');
+  let skip = [];
+  try { skip = JSON.parse(fs.readFileSync(skipFile, 'utf8')); } catch {}
+  for (const v of voice.listVoices()) {
+    if (skip.includes(v.id) || !needsOldVersion(`${v.file}.json`)) continue;
+    const onnxUrl = voiceUrl(path.basename(v.file));
+    if (!onnxUrl) continue;
+    // Download both into tmp first; only replace the voice once both arrived intact.
+    const tmpOnnx = path.join(voice.tmpDir, `repair-${v.id}`);
+    const tmpJson = `${tmpOnnx}.json`;
+    try {
+      await download(`${onnxUrl}.json`, tmpJson, () => {});
+      if (needsOldVersion(tmpJson)) throw new Error('v1.0.0 config is also new-style');
+      await download(onnxUrl, tmpOnnx, () => {});
+      fs.copyFileSync(tmpOnnx, v.file);
+      fs.copyFileSync(tmpJson, `${v.file}.json`);
+      fixed.push(v.id);
+    } catch (err) {
+      // 404 = this voice has no v1.0.0 version; don't retry every launch
+      if (/\(404\)|also new-style/.test(err.message)) { skip.push(v.id); fs.writeFileSync(skipFile, JSON.stringify(skip)); }
+    } finally {
+      fs.rmSync(tmpOnnx, { force: true });
+      fs.rmSync(tmpJson, { force: true });
+    }
+  }
+  return fixed;
+}
 
 /** Download url -> file, reporting progress. Writes to .part first so a failed download never looks finished. */
 async function download(url, dest, onProgress) {
@@ -112,4 +171,4 @@ async function installVoiceFeatures(voice, onProgress = () => {}) {
   return done;
 }
 
-module.exports = { installVoiceFeatures };
+module.exports = { installVoiceFeatures, repairVoices, voiceUrl };

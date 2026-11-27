@@ -31,8 +31,8 @@ $Urls = @{
   ModelBase   = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin'
   ModelTiny   = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin'
   PiperZip    = 'https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip'
-  VoiceOnnx   = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx'
-  VoiceJson   = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json'
+  VoiceOnnx   = 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx'
+  VoiceJson   = 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx.json'
 }
 
 # ---------- Pretty output ----------

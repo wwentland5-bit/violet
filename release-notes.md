@@ -1,2 +1,2 @@
-- Fixed Piper voices crashing with '"aɪ" is not a single codepoint' (newer voice files now work)
-- New: Settings → Voice → "Download voice features" sets up speech recognition, an English model and the Amy voice in one click
+- Fixed Piper mispronouncing words ("Righte" instead of "right")
+- Violet now swaps newer voice files for the original versions its voice engine was built for, automatically, in the background
