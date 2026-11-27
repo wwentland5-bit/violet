@@ -1247,3 +1247,17 @@ body.panel .dash-rail { position: static; }
 @media (prefers-reduced-motion: reduce) {
   .widget-card.enter { animation: none; }
 }
+
+/* Dragging widgets (v6.1) */
+.w-head { cursor: grab; touch-action: none; }
+.w-head button { cursor: pointer; }
+body.dragging-widget, body.dragging-widget .w-head { cursor: grabbing; }
+body.dragging-widget iframe, body.dragging-widget video { pointer-events: none; }
+body.dragging-widget .dash-grid { user-select: none; }
+.widget-card.dragging { opacity: 0.55; outline: 2px dashed var(--accent); outline-offset: 3px; }
+.w-head::before {
+  content: ""; width: 6px; height: 12px; margin-right: -2px; flex: none; opacity: 0;
+  background: radial-gradient(circle, var(--muted) 1px, transparent 1.4px) 0 0 / 3px 4px;
+  transition: opacity 0.15s;
+}
+.widget-card:hover .w-head::before { opacity: 0.8; }

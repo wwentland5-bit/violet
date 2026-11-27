@@ -577,7 +577,10 @@ function renderWidgets(list) {
       entry = { el, sig };
       widgetEls.set(w.id, entry);
     }
-    if (grid.children[i] !== entry.el) grid.insertBefore(entry.el, grid.children[i] || null);
+    // Position with CSS order instead of moving the element: moving an iframe
+    // in the page reloads it, which would restart a playing video.
+    if (!entry.el.isConnected) grid.append(entry.el);
+    entry.el.style.order = String(i);
   });
   for (const [id, entry] of widgetEls) if (!seen.has(id)) { entry.el.remove(); widgetEls.delete(id); }
   $('dash-empty').hidden = list.length > 0;

@@ -155,6 +155,37 @@ class Dashboard {
     this.persist();
   }
 
+  /**
+   * Move one widget (Violet's "move" action). Board order = array order,
+   * first = top-left. Accepts { to: "first"|"last"|number(1-based) } or
+   * { before: id } / { after: id }.
+   */
+  move(id, where = {}) {
+    const list = this.data.widgets;
+    const from = list.findIndex(w => w.id === id);
+    if (from === -1) throw new Error(`no widget ${id}`);
+    const [w] = list.splice(from, 1);
+    let at = list.length;
+    const ref = (rid) => list.findIndex(x => x.id === rid);
+    if (where.before && ref(where.before) !== -1) at = ref(where.before);
+    else if (where.after && ref(where.after) !== -1) at = ref(where.after) + 1;
+    else if (where.to === 'first' || where.to === 'top') at = 0;
+    else if (where.to === 'last' || where.to === 'bottom') at = list.length;
+    else if (Number.isFinite(Number(where.to))) at = Math.max(0, Math.min(list.length, Math.round(Number(where.to)) - 1));
+    list.splice(at, 0, w);
+    return w;
+  }
+
+  /** New full order from drag-and-drop. Unknown ids are ignored; missing ones keep their place at the end. */
+  reorder(ids) {
+    if (!Array.isArray(ids)) return;
+    const byId = new Map(this.data.widgets.map(w => [w.id, w]));
+    const next = [];
+    for (const id of ids) { const w = byId.get(id); if (w) { next.push(w); byId.delete(id); } }
+    this.data.widgets = [...next, ...byId.values()];
+    this.persist();
+  }
+
   /** Buttons on a timer widget: pause | resume | restart | add1 */
   timer(id, op) {
     const w = this.data.widgets.find(x => x.id === id && x.type === 'timer');
@@ -200,6 +231,7 @@ class Dashboard {
           else if (action === 'update') log.push(`updated ${this.update(str(c.id, 20), c).title}`);
           else if (action === 'remove') { this.data.widgets = this.data.widgets.filter(w => w.id !== c.id); log.push(`removed ${c.id}`); }
           else if (action === 'clear') { this.data.widgets = []; log.push('cleared'); }
+          else if (action === 'move') log.push(`moved ${this.move(str(c.id, 20), { to: c.to, before: str(c.before, 20), after: str(c.after, 20) }).title}`);
         } catch (err) { log.push(`widget error: ${err.message}`); }
       }
     }
@@ -236,7 +268,7 @@ class Dashboard {
       const left = w.pausedLeft != null ? w.pausedLeft : Math.max(0, (w.endsAt - Date.now()) / 1000);
       return ` [${w.pausedLeft != null ? 'paused' : left > 0 ? 'running' : 'finished'}, ${Math.round(left)}s left]`;
     };
-    const list = this.data.widgets.map(w => `${w.id}: ${w.type} "${w.title}"${w.url ? ` ${w.url}` : ''}${timerState(w)}`).join('\n') || '(none)';
+    const list = this.data.widgets.map((w, i) => `${i + 1}. ${w.id}: ${w.type} "${w.title}"${w.url ? ` ${w.url}` : ''}${timerState(w)}`).join('\n') || '(none)';
     return 'VOICE DASHBOARD MODE: the user is talking to you by voice on a dashboard. Your reply is read aloud, so keep it SHORT, ' +
       'natural and conversational (1-3 sentences), with no markdown tables or long lists.\n' +
       'You control the widgets on the dashboard. To change them, add one or more blocks at the END of your reply:\n' +
@@ -245,6 +277,8 @@ class Dashboard {
       '- website: url (shows the live site)\n- video: url (YouTube, Vimeo, or a direct .mp4)\n' +
       '- article: url, optional summary (your 2-3 sentence summary)\n- note: text (Markdown)\n- image: url\n' +
       '- list: items (array of strings), e.g. a checklist\n- timer: minutes and/or seconds\n- link: url\n' +
+      'Move widgets (board order: first = top-left): {"action":"move","id":"w3","to":"first"} ("last", or a position number like 2), ' +
+      'or {"action":"move","id":"w3","before":"w1"} / "after". Make one bigger or smaller with {"action":"update","id":"w3","size":"large"}.\n' +
       'Timer controls (use the timer\'s id): pause {"action":"update","id":"w3","paused":true}, resume "paused":false, ' +
       '"restart":true, add time "addMinutes":2. "Pause my timer" means the running timer; if there are several, ask which.\n' +
       'YouTube: Violet checks every YouTube link before showing it and drops removed, private or terminated-channel videos. ' +
@@ -254,7 +288,7 @@ class Dashboard {
       'remove with {"action":"remove","id":"w3"}, or {"action":"clear"} to remove everything.\n' +
       'Use WebSearch/WebFetch to find REAL urls. Never invent urls. Add widgets when they genuinely help (showing a video, ' +
       'a page, an article, a recipe list, a timer), and remove stale ones when asked. Never mention the tags out loud.\n' +
-      `Current widgets:\n${list}`;
+      `Current widgets, in board order:\n${list}`;
   }
 }
 

@@ -86,6 +86,77 @@
     });
   }
 
+  // ---------- Dashboard: drag widgets to rearrange ----------
+  // Grab a widget by its title bar and drop it where you want it. The board
+  // reflows live while you drag. Keyboard: focus a widget's button and press
+  // Alt+Left / Alt+Right. Violet can move widgets too ("put the timer first").
+  const grid = $('dash-grid');
+  const orderedCards = () => [...grid.querySelectorAll('.widget-card')]
+    .sort((a, b) => (Number(a.style.order) || 0) - (Number(b.style.order) || 0));
+  const applyOrder = (cards) => cards.forEach((c, i) => { c.style.order = String(i); });
+  const saveOrder = (cards) => window.violet.dashboard.reorder(cards.map(c => c.dataset.id));
+
+  let drag = null; // { card, startX, startY, active, cards }
+  grid.addEventListener('pointerdown', (e) => {
+    const head = e.target.closest('.w-head');
+    if (!head || e.button !== 0 || e.target.closest('button, a, input, select, textarea')) return;
+    const card = head.closest('.widget-card');
+    drag = { card, startX: e.clientX, startY: e.clientY, active: false, pointerId: e.pointerId };
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.active) {
+      if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 6) return; // a click, not a drag
+      drag.active = true;
+      drag.cards = orderedCards();
+      document.body.classList.add('dragging-widget'); // stops iframes from eating the pointer
+      drag.card.classList.add('dragging');
+    }
+    const over = document.elementsFromPoint(e.clientX, e.clientY)
+      .map(el => el.closest && el.closest('.widget-card'))
+      .find(c => c && c !== drag.card && grid.contains(c));
+    if (!over) return;
+    const r = over.getBoundingClientRect();
+    // Left/top half of the target = drop before it, right/bottom half = after
+    const after = (e.clientX - r.left) / r.width + (e.clientY - r.top) / r.height > 1;
+    const cards = drag.cards.filter(c => c !== drag.card);
+    const at = cards.indexOf(over) + (after ? 1 : 0);
+    cards.splice(at, 0, drag.card);
+    if (cards.some((c, i) => c !== drag.cards[i])) { drag.cards = cards; applyOrder(cards); }
+  });
+
+  const endDrag = () => {
+    if (!drag) return;
+    if (drag.active) {
+      drag.card.classList.remove('dragging');
+      document.body.classList.remove('dragging-widget');
+      saveOrder(drag.cards);
+      // Swallow only the click the browser fires right after this drop
+      const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      window.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener('click', swallow, true), 0);
+    }
+    drag = null;
+  };
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+  window.addEventListener('blur', endDrag);
+
+  grid.addEventListener('keydown', (e) => {
+    if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    const card = e.target.closest('.widget-card');
+    if (!card) return;
+    e.preventDefault(); e.stopPropagation();
+    const cards = orderedCards();
+    const i = cards.indexOf(card);
+    const j = Math.max(0, Math.min(cards.length - 1, i + (e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1)));
+    if (i === j) return;
+    cards.splice(i, 1); cards.splice(j, 0, card);
+    applyOrder(cards);
+    saveOrder(cards);
+  });
+
   // Refill the field every time the Voice settings are shown (fillVoiceSettings
   // is renderer.js's global; calls to it resolve to this wrapper)
   const fillVoiceBase = window.fillVoiceSettings;

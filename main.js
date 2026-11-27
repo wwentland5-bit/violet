@@ -855,6 +855,7 @@ function setupIpc() {
   ipcMain.handle('dashboard:clear', () => dashboard.clear());
   ipcMain.handle('dashboard:toggle-item', (_e, id, i) => dashboard.toggleItem(id, i));
   ipcMain.handle('dashboard:resize', (_e, id, size) => dashboard.resize(id, size));
+  ipcMain.handle('dashboard:reorder', (_e, ids) => dashboard.reorder(Array.isArray(ids) ? ids.slice(0, 50).map(String) : []));
   ipcMain.handle('dashboard:timer', (_e, id, op) => dashboard.timer(String(id || ''), String(op || '')));
   // Chat uses this to mark dead YouTube links
   ipcMain.handle('youtube:check', (_e, url) => (typeof url === 'string' ? require('./youtube').checkYouTube(url) : { ok: true }));

@@ -1,5 +1,4 @@
-- New look: the dashboard is now a console, with Violet's words as a live readout beside your widgets
-- Timers can be paused, resumed, extended (+1 min) and restarted, by button or by voice ("pause my timer")
-- YouTube links are checked first: removed, private or terminated-channel videos are never shown, and dead links in chat are marked
-- New default voice: Lessac (high), downloaded in the background and switched to automatically
-- Wake-up message: choose what Violet says when you say "Hey Violet" (Settings → Voice)
+- Rearrange the dashboard: drag any widget by its title bar and drop it where you want it
+- Violet can move widgets too: "put the timer first", "move the video next to my notes"
+- Keyboard: focus a widget's button and press Alt+Left or Alt+Right
+- Moving a widget no longer restarts a playing video

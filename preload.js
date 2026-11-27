@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('violet', {
     clear: () => ipcRenderer.invoke('dashboard:clear'),
     toggleItem: (id, i) => ipcRenderer.invoke('dashboard:toggle-item', id, i),
     resize: (id, size) => ipcRenderer.invoke('dashboard:resize', id, size),
+    reorder: (ids) => ipcRenderer.invoke('dashboard:reorder', ids),
     timer: (id, op) => ipcRenderer.invoke('dashboard:timer', id, op),
     onBlocked: (cb) => listen('dashboard:blocked', cb),
     open: (url) => ipcRenderer.invoke('dashboard:open', url),
