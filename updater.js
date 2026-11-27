@@ -51,6 +51,16 @@ function bakedRepo(app) {
   } catch { return ''; }
 }
 
+/** Turn a long updater error (HTTP headers, stack trace) into one short line. */
+function friendlyError(err) {
+  const msg = String((err && err.message) || err);
+  if (/404|no published versions|Cannot find latest/i.test(msg)) {
+    return 'No update files found yet. If an update was just published, try again in a few minutes.';
+  }
+  if (/ENOTFOUND|ETIMEDOUT|ECONNRESET|net::ERR_/i.test(msg)) return 'Couldn\'t reach GitHub. Check your internet and try again.';
+  return `Update check failed: ${msg.split('\n')[0].slice(0, 160)}`;
+}
+
 class Updater {
   /**
    * @param {object} o
@@ -129,12 +139,7 @@ class Updater {
       this.startIdleWatch();
     });
     autoUpdater.on('error', (err) => {
-      const msg = String((err && err.message) || err);
-      // A repo with no releases yet isn't really an error
-      const friendly = /404|no published versions|Cannot find latest|HttpError: 404/i.test(msg)
-        ? 'No updates published yet (or the repo name is wrong).'
-        : `Update check failed: ${msg.split('\n')[0].slice(0, 160)}`;
-      this.setState({ state: 'error', message: friendly, lastChecked: Date.now() });
+      this.setState({ state: 'error', message: friendlyError(err), lastChecked: Date.now() });
     });
   }
 
@@ -145,7 +150,7 @@ class Updater {
     if (!this.app.isPackaged || !this.repo()) { this.configure(); return this.state; }
     if (['downloading', 'ready'].includes(this.state.state)) return this.state;
     try { await autoUpdater.checkForUpdates(); }
-    catch (err) { if (manual) this.setState({ state: 'error', message: `Update check failed: ${err.message}` }); }
+    catch (err) { if (manual) this.setState({ state: 'error', message: friendlyError(err), lastChecked: Date.now() }); }
     return this.state;
   }
 

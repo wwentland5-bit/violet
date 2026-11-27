@@ -40,12 +40,13 @@ jobs:
         run: |
           VERSION="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
           echo "Publishing version $VERSION to $GITHUB_REPOSITORY"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           node -e "
             const fs = require('fs');
             const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
             p.version = process.argv[1];
-            p.build.publish = [{ provider: 'github', owner, repo, releaseType: 'release' }];
+            p.build.publish = [{ provider: 'github', owner, repo, releaseType: 'draft' }]; // made public in the last step, once every file is uploaded
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
             // Bake the update source into the app so updates work with no setup
             fs.writeFileSync('update-source.json', JSON.stringify({ owner, repo }));
@@ -66,22 +67,23 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
           "
 
-      - name: Make sure the version tag exists on GitHub
-        # A published release needs a real tag. When the workflow is run by hand
-        # (no tag pushed), create it here. Tags pushed with GITHUB_TOKEN do not
-        # start this workflow again, so there is no double build.
+      - name: Create the tag and ONE draft release
+        # A release needs a real tag. When run by hand (no tag pushed) the tag is
+        # made here; tags pushed with GITHUB_TOKEN do not start this workflow again.
+        # The draft is made BEFORE the build: electron-builder uploads files in
+        # parallel, and without an existing release each upload can create its own
+        # duplicate release, which makes the update download 404.
         shell: bash
         env:
-          INPUT_VERSION: ${{ github.event.inputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -n "$INPUT_VERSION" ]; then
-            TAG="v$INPUT_VERSION"
-            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
-              echo "Tag $TAG already exists"
-            else
-              git tag "$TAG" "$GITHUB_SHA"
-              git push origin "$TAG"
-            fi
+          TAG="v$VERSION"
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            git tag "$TAG" "$GITHUB_SHA"
+            git push origin "$TAG"
+          fi
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --draft --title "$VERSION" --notes-file release-notes.md
           fi
 
       - name: Install packages
@@ -91,3 +93,34 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win nsis --x64 --publish always
+
+      - name: Make the release public
+        # Only now does Violet see it, so it never finds a half-uploaded update.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "v$VERSION" --draft=false --latest
+
+      - name: Remove duplicate releases (from older builds)
+        # If two releases share one tag, keep the one that has latest.yml.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | "\(.id) \(.tag_name) \([.assets[].name] | index("latest.yml") != null)"' > rel.txt
+          cat rel.txt
+          for TAG in $(awk '{print $2}' rel.txt | sort | uniq -d); do
+            KEEP=$(awk -v t="$TAG" '$2==t && $3=="true"{print $1; exit}' rel.txt)
+            [ -z "$KEEP" ] && continue
+            for ID in $(awk -v t="$TAG" -v k="$KEEP" '$2==t && $1!=k{print $1}' rel.txt); do
+              echo "Moving files from duplicate release $ID into $KEEP, then deleting it"
+              for A in $(gh api "repos/$GITHUB_REPOSITORY/releases/$ID/assets" --jq '.[].id'); do
+                NAME=$(gh api "repos/$GITHUB_REPOSITORY/releases/assets/$A" --jq .name)
+                gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$A" > "$NAME"
+                # Upload straight to the release we keep (by id, since the tag is ambiguous)
+                curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" \
+                  --data-binary @"$NAME" "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$KEEP/assets?name=$NAME" >/dev/null || true
+              done
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$ID"
+            done
+          done

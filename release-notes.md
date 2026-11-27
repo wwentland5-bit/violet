@@ -1,2 +1,3 @@
-- Fixed "I couldn't start Claude Code": Violet now finds Claude Code by itself, even if the path in Settings is old or wrong
-- Prefers the official Claude Code install (.local\bin\claude.exe) over other copies
+- Update errors are now one short, readable line instead of a wall of text
+- Publishing fix: each version now has exactly one release, so updates download reliably
+- Includes 4.5.1: Violet finds Claude Code by itself, even if the path in Settings is old
