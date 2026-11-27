@@ -134,7 +134,7 @@ const DEFAULT_SETTINGS = {
   classicUi: false,        // the original see-through floating panel (Ctrl+Shift+U)
   quickAskHotkey: 'Alt+Shift+A', // grab selected text from any app and ask about it
   // v4.5: automatic updates from GitHub Releases
-  updateRepo: '',          // "your-github-username" or "username/repo" (repo defaults to "violet")
+  updateRepo: '',          // "your-github-username" or "username/repo"; empty = use the repo GitHub baked in (wwentland5-bit/violet)
   autoUpdate: true,        // check + download updates in the background
   autoInstallUpdates: true,// install by itself while Violet is hidden and idle
   lastRunVersion: '',
