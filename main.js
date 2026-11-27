@@ -253,6 +253,39 @@ function resolveMedia(src, baseDir) {
   return fs.existsSync(full) ? pathToFileURL(full).href : null;
 }
 
+/**
+ * Personal prompts that live only on this PC: any "*.prompt.json" file in
+ * Violet's data folder (%APPDATA%\\violet) is added to the prompt picker.
+ *   { "name": "Wyatt", "prompt": "…", "makeDefault": true }
+ * Editing the file updates the prompt on the next start. "makeDefault"
+ * switches to it once; after that your own choice in the picker wins.
+ */
+function loadPromptFiles() {
+  let files = [];
+  try { files = fs.readdirSync(USER_DIR).filter(f => /\.prompt\.json$/i.test(f)); } catch { return; }
+  let changed = false;
+  settings.appliedPromptFiles = Array.isArray(settings.appliedPromptFiles) ? settings.appliedPromptFiles : [];
+  for (const file of files.slice(0, 20)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(USER_DIR, file), 'utf8').replace(/^\uFEFF/, ''));
+      const name = String(raw.name || '').trim().slice(0, 40);
+      const text = String(raw.prompt || '').trim().slice(0, 8000);
+      if (!name || !text) continue;
+      const id = `file-${file.replace(/\.prompt\.json$/i, '').toLowerCase().replace(/[^a-z0-9-]/g, '-')}`;
+      const existing = settings.prompts.find(p => p.id === id);
+      if (existing) {
+        if (existing.name !== name || existing.prompt !== text) { existing.name = name; existing.prompt = text; changed = true; }
+      } else { settings.prompts.push({ id, name, prompt: text }); changed = true; }
+      if (raw.makeDefault && !settings.appliedPromptFiles.includes(id)) {
+        settings.activePrompt = id;
+        settings.appliedPromptFiles.push(id);
+        changed = true;
+      }
+    } catch (err) { console.error(`Skipping prompt file ${file}:`, err.message); }
+  }
+  if (changed) saveSettings();
+}
+
 function listThemes() {
   const themes = [];
   let files = [];
@@ -856,6 +889,8 @@ function setupIpc() {
   ipcMain.handle('dashboard:toggle-item', (_e, id, i) => dashboard.toggleItem(id, i));
   ipcMain.handle('dashboard:resize', (_e, id, size) => dashboard.resize(id, size));
   ipcMain.handle('dashboard:reorder', (_e, ids) => dashboard.reorder(Array.isArray(ids) ? ids.slice(0, 50).map(String) : []));
+  ipcMain.handle('dashboard:position', (_e, id, pos) => dashboard.position(String(id || ''), pos && typeof pos === 'object' ? pos : {}));
+  ipcMain.handle('dashboard:tidy', () => { dashboard.tidy(); dashboard.persist(); });
   ipcMain.handle('dashboard:timer', (_e, id, op) => dashboard.timer(String(id || ''), String(op || '')));
   // Chat uses this to mark dead YouTube links
   ipcMain.handle('youtube:check', (_e, url) => (typeof url === 'string' ? require('./youtube').checkYouTube(url) : { ok: true }));
@@ -1085,6 +1120,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     app.setAppUserModelId('com.wyatt.violet');
     settings = loadSettings();
+    loadPromptFiles();
     ensureFolders();
     saveSettings();
 

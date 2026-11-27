@@ -56,6 +56,36 @@ function parseArticle(html, url) {
   };
 }
 
+// ---------- Free board layout ----------
+// Every widget can sit anywhere on the board: x/y (pixels from the board's
+// top-left), optional w/h (pixels), z (stacking). Violet can also give a named
+// spot in `place` ("top-right", "center", "next to w2"…); the panel turns it
+// into x/y, because only the panel knows how big the board is.
+const PLACES = ['top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right'];
+const num = (v, min, max) => (Number.isFinite(Number(v)) ? Math.max(min, Math.min(max, Math.round(Number(v)))) : null);
+
+function cleanPlace(p) {
+  const t = str(p, 40).toLowerCase().replace(/_/g, '-').replace(/\s+/g, ' ');
+  if (PLACES.includes(t.replace(/ /g, '-'))) return t.replace(/ /g, '-');
+  const near = t.match(/^(?:next to|near|beside|by) (w\d+)$/);
+  return near ? `near:${near[1]}` : '';
+}
+
+function applyLayout(out, w) {
+  if ('size' in w && SIZES.includes(w.size)) { delete out.w; delete out.h; } // a preset size replaces a custom one
+  const x = num(w.x, 0, 20000), y = num(w.y, 0, 20000);
+  if (x != null && y != null) { out.x = x; out.y = y; delete out.place; }
+  if ('place' in w) {
+    const p = cleanPlace(w.place);
+    if (p) { out.place = p; delete out.x; delete out.y; }
+  }
+  const ww = num(w.w, 180, 3000), hh = num(w.h, 100, 3000);
+  if (ww != null) out.w = ww;
+  if (hh != null) out.h = hh;
+  const z = num(w.z, 0, 1e6);
+  if (z != null) out.z = z;
+}
+
 /**
  * Timer controls, from Violet ({"action":"update","id":"w3","paused":true})
  * or from the widget's buttons. A paused timer keeps its time left in
@@ -120,6 +150,7 @@ class Dashboard {
       out.duration = secs;
     }
     if (type === 'timer') applyTimerControls(out, w);
+    applyLayout(out, w);
     if (['website', 'video', 'article', 'image', 'link'].includes(type) && !out.url) throw new Error(`${type} needs a valid https url`);
     if (type === 'timer' && !out.endsAt) throw new Error('timer needs minutes or seconds');
     return out;
@@ -156,24 +187,36 @@ class Dashboard {
   }
 
   /**
-   * Move one widget (Violet's "move" action). Board order = array order,
-   * first = top-left. Accepts { to: "first"|"last"|number(1-based) } or
-   * { before: id } / { after: id }.
+   * Move one widget on the free board (Violet's "move" action):
+   * { place: "top-right" | "center" | "next to w2" … } or exact { x, y }.
+   * Older words still work: to "first"/"last", before/after another widget.
    */
   move(id, where = {}) {
-    const list = this.data.widgets;
-    const from = list.findIndex(w => w.id === id);
-    if (from === -1) throw new Error(`no widget ${id}`);
-    const [w] = list.splice(from, 1);
-    let at = list.length;
-    const ref = (rid) => list.findIndex(x => x.id === rid);
-    if (where.before && ref(where.before) !== -1) at = ref(where.before);
-    else if (where.after && ref(where.after) !== -1) at = ref(where.after) + 1;
-    else if (where.to === 'first' || where.to === 'top') at = 0;
-    else if (where.to === 'last' || where.to === 'bottom') at = list.length;
-    else if (Number.isFinite(Number(where.to))) at = Math.max(0, Math.min(list.length, Math.round(Number(where.to)) - 1));
-    list.splice(at, 0, w);
+    const w = this.data.widgets.find(x => x.id === id);
+    if (!w) throw new Error(`no widget ${id}`);
+    let place = where.place;
+    if (!place && (where.to === 'first' || where.to === 'top')) place = 'top-left';
+    if (!place && (where.to === 'last' || where.to === 'bottom')) place = 'bottom';
+    if (!place && (where.before || where.after)) place = `next to ${where.before || where.after}`;
+    applyLayout(w, { x: where.x, y: where.y, place, w: where.w, h: where.h });
+    w.z = this.topZ() + 1; // a moved widget comes to the front
     return w;
+  }
+
+  topZ() { return this.data.widgets.reduce((m, w) => Math.max(m, w.z || 0), 0); }
+
+  /** The panel saves where you dropped / resized a widget. */
+  position(id, pos = {}) {
+    const w = this.data.widgets.find(x => x.id === id);
+    if (!w) return;
+    applyLayout(w, pos);
+    if (pos.clearPlace) delete w.place;
+    this.persist();
+  }
+
+  /** Forget every position, so the panel lines widgets up neatly again. */
+  tidy() {
+    for (const w of this.data.widgets) { delete w.x; delete w.y; delete w.w; delete w.h; delete w.place; delete w.z; }
   }
 
   /** New full order from drag-and-drop. Unknown ids are ignored; missing ones keep their place at the end. */
@@ -231,7 +274,8 @@ class Dashboard {
           else if (action === 'update') log.push(`updated ${this.update(str(c.id, 20), c).title}`);
           else if (action === 'remove') { this.data.widgets = this.data.widgets.filter(w => w.id !== c.id); log.push(`removed ${c.id}`); }
           else if (action === 'clear') { this.data.widgets = []; log.push('cleared'); }
-          else if (action === 'move') log.push(`moved ${this.move(str(c.id, 20), { to: c.to, before: str(c.before, 20), after: str(c.after, 20) }).title}`);
+          else if (action === 'move') log.push(`moved ${this.move(str(c.id, 20), { to: c.to, before: str(c.before, 20), after: str(c.after, 20), place: c.place, x: c.x, y: c.y, w: c.w, h: c.h }).title}`);
+          else if (action === 'tidy') { this.tidy(); log.push('tidied'); }
         } catch (err) { log.push(`widget error: ${err.message}`); }
       }
     }
@@ -268,7 +312,8 @@ class Dashboard {
       const left = w.pausedLeft != null ? w.pausedLeft : Math.max(0, (w.endsAt - Date.now()) / 1000);
       return ` [${w.pausedLeft != null ? 'paused' : left > 0 ? 'running' : 'finished'}, ${Math.round(left)}s left]`;
     };
-    const list = this.data.widgets.map((w, i) => `${i + 1}. ${w.id}: ${w.type} "${w.title}"${w.url ? ` ${w.url}` : ''}${timerState(w)}`).join('\n') || '(none)';
+    const where = (w) => (w.x != null ? ` at x=${w.x},y=${w.y}${w.w ? ` ${w.w}px wide` : ''}` : w.place ? ` (going to ${w.place})` : '');
+    const list = this.data.widgets.map(w => `${w.id}: ${w.type} "${w.title}"${w.url ? ` ${w.url}` : ''}${timerState(w)}${where(w)}`).join('\n') || '(none)';
     return 'VOICE DASHBOARD MODE: the user is talking to you by voice on a dashboard. Your reply is read aloud, so keep it SHORT, ' +
       'natural and conversational (1-3 sentences), with no markdown tables or long lists.\n' +
       'You control the widgets on the dashboard. To change them, add one or more blocks at the END of your reply:\n' +
@@ -277,8 +322,10 @@ class Dashboard {
       '- website: url (shows the live site)\n- video: url (YouTube, Vimeo, or a direct .mp4)\n' +
       '- article: url, optional summary (your 2-3 sentence summary)\n- note: text (Markdown)\n- image: url\n' +
       '- list: items (array of strings), e.g. a checklist\n- timer: minutes and/or seconds\n- link: url\n' +
-      'Move widgets (board order: first = top-left): {"action":"move","id":"w3","to":"first"} ("last", or a position number like 2), ' +
-      'or {"action":"move","id":"w3","before":"w1"} / "after". Make one bigger or smaller with {"action":"update","id":"w3","size":"large"}.\n' +
+      'The board is free-form: widgets can sit anywhere. Move one with {"action":"move","id":"w3","place":"top-right"} ' +
+      '(top-left, top, top-right, left, center, right, bottom-left, bottom, bottom-right, or "next to w2"), or exact pixels ' +
+      'from the board\'s top-left {"action":"move","id":"w3","x":40,"y":300}. Resize with "size" (small/medium/large) or ' +
+      '{"action":"update","id":"w3","w":520,"h":340}. {"action":"tidy"} lines everything up neatly. You can also give "place" when adding.\n' +
       'Timer controls (use the timer\'s id): pause {"action":"update","id":"w3","paused":true}, resume "paused":false, ' +
       '"restart":true, add time "addMinutes":2. "Pause my timer" means the running timer; if there are several, ask which.\n' +
       'YouTube: Violet checks every YouTube link before showing it and drops removed, private or terminated-channel videos. ' +
@@ -288,7 +335,7 @@ class Dashboard {
       'remove with {"action":"remove","id":"w3"}, or {"action":"clear"} to remove everything.\n' +
       'Use WebSearch/WebFetch to find REAL urls. Never invent urls. Add widgets when they genuinely help (showing a video, ' +
       'a page, an article, a recipe list, a timer), and remove stale ones when asked. Never mention the tags out loud.\n' +
-      `Current widgets, in board order:\n${list}`;
+      `Current widgets:\n${list}`;
   }
 }
 

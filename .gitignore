@@ -3,3 +3,4 @@ dist/
 setup-log.txt
 update-source.json
 *.log
+*.prompt.json

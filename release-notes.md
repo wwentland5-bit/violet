@@ -1,3 +1,4 @@
-- Fixed: browser tabs can be closed again with the × button (also middle-click and Ctrl+W)
-- Fixed: desktop widgets (clock, system, weather, notes, servers) can be dragged reliably
-- Dashboard: dragging a widget no longer snaps back if the board updates mid-drag
+- Free-move dashboard: drag widgets anywhere, resize them from the bottom-right corner, and use "Tidy up" to line them back up
+- Violet can place widgets anywhere too: "put the video top right", "move the timer next to my notes"
+- Violet's replies no longer pick up your personal Claude Code plugins (no more "Taking this as…" lines)
+- Personal prompts: drop a *.prompt.json file in Violet's data folder and it shows up in the prompt picker (stays on your PC)

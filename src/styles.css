@@ -1248,16 +1248,35 @@ body.panel .dash-rail { position: static; }
   .widget-card.enter { animation: none; }
 }
 
-/* Dragging widgets (v6.1) */
+/* Free board (v6.2): widgets sit anywhere */
+.dash-grid { position: relative; display: block; min-height: 0; }
+.dash-grid .widget-card { position: absolute; left: 0; top: 0; max-width: 100%; }
+/* Widgets can overlap now, so make them solid: the theme's surface color
+   stacked three times (keeps its hue in every theme, light or dark) */
+.dash-grid .widget-card:not(.type-video):not(.type-website):not(.type-image) {
+  background: linear-gradient(var(--surface), var(--surface)), linear-gradient(var(--surface), var(--surface)),
+              linear-gradient(var(--surface), var(--surface)), linear-gradient(var(--surface-2), var(--surface-2));
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+.widget-card.fixed-h .w-body { flex: 1; min-height: 0; }
+.widget-card.fixed-h .w-body iframe, .widget-card.fixed-h .w-body video,
+.widget-card.fixed-h.type-website .w-body { height: 100%; aspect-ratio: auto; min-height: 0; }
+.widget-card.fixed-h .w-image { max-height: none; height: 100%; }
 .w-head { cursor: grab; touch-action: none; }
 .w-head button { cursor: pointer; }
 body.dragging-widget, body.dragging-widget .w-head { cursor: grabbing; }
 body.dragging-widget iframe, body.dragging-widget video { pointer-events: none; }
 body.dragging-widget .dash-grid { user-select: none; }
-.widget-card.dragging { opacity: 0.55; outline: 2px dashed var(--accent); outline-offset: 3px; }
+.widget-card.dragging { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); outline: 1px solid var(--accent); }
 .w-head::before {
   content: ""; width: 6px; height: 12px; margin-right: -2px; flex: none; opacity: 0;
   background: radial-gradient(circle, var(--muted) 1px, transparent 1.4px) 0 0 / 3px 4px;
   transition: opacity 0.15s;
 }
 .widget-card:hover .w-head::before { opacity: 0.8; }
+.w-resize {
+  position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; z-index: 2;
+  touch-action: none; opacity: 0; transition: opacity 0.15s;
+  background: linear-gradient(135deg, transparent 55%, var(--muted) 55% 62%, transparent 62% 72%, var(--muted) 72% 79%, transparent 79%);
+}
+.widget-card:hover .w-resize, .widget-card.dragging .w-resize { opacity: 0.9; }

@@ -85,6 +85,10 @@ class ClaudeBridge {
     this.getSettings = getSettings;
     this.sessionId = null;
     this.supportsPartial = true;
+    // Load only project/local Claude Code settings, NOT your user settings: your
+    // personal Claude Code plugins and hooks (e.g. a prompt rewriter that starts
+    // replies with "Taking this as: …") must not leak into Violet's answers.
+    this.isolateSettings = true;
     this.child = null;
   }
 
@@ -107,6 +111,7 @@ class ClaudeBridge {
   buildArgs(model, allowedTools, addDirs = []) {
     const args = ['-p', '--output-format', 'stream-json', '--verbose'];
     if (this.supportsPartial) args.push('--include-partial-messages');
+    if (this.isolateSettings) args.push('--setting-sources', 'project,local');
     args.push('--disallowedTools', ALWAYS_BLOCKED);
     if (allowedTools.length) args.push('--allowedTools', allowedTools.join(','));
     // Extra folders Claude may READ (your project). Quoted for the Windows shell;
@@ -230,6 +235,12 @@ class ClaudeBridge {
         // Older Claude Code without --include-partial-messages: retry once without it.
         if (code !== 0 && !isRetry && this.supportsPartial && /include-partial-messages/i.test(stderr)) {
           this.supportsPartial = false;
+          this.run(opts, true).then(done);
+          return;
+        }
+        // Older Claude Code without --setting-sources: retry once without it.
+        if (code !== 0 && !isRetry && this.isolateSettings && /setting-sources/i.test(stderr)) {
+          this.isolateSettings = false;
           this.run(opts, true).then(done);
           return;
         }

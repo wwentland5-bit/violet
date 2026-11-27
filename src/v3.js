@@ -559,7 +559,9 @@ function widgetCard(w) {
   }));
   actions.append(btn('Remove', '×', () => window.violet.dashboard.remove(w.id)));
   head.append(actions);
-  card.append(head, widgetBody(w));
+  const grip = h('span', 'w-resize');
+  grip.title = 'Drag to resize';
+  card.append(head, widgetBody(w), grip);
   return card;
 }
 
@@ -569,7 +571,9 @@ function renderWidgets(list) {
   const seen = new Set();
   list.forEach((w, i) => {
     seen.add(w.id);
-    const sig = JSON.stringify(w);
+    // Position/size changes must not rebuild the card (that would restart videos)
+    const { x, y, w: _w, h: _h, z, place, ...content } = w; // eslint-disable-line no-unused-vars
+    const sig = JSON.stringify(content);
     let entry = widgetEls.get(w.id);
     if (!entry || entry.sig !== sig) {
       const el = widgetCard(w);
@@ -580,10 +584,10 @@ function renderWidgets(list) {
     // Position with CSS order instead of moving the element: moving an iframe
     // in the page reloads it, which would restart a playing video.
     if (!entry.el.isConnected) grid.append(entry.el);
-    // While you're dragging, the drag owns the order (a background update
-    // mid-drag would otherwise snap widgets back)
     if (!document.body.classList.contains('dragging-widget')) entry.el.style.order = String(i);
   });
+  // Free board: put every widget at its saved spot (v6.js)
+  if (window.layoutFreeBoard) window.layoutFreeBoard(list);
   for (const [id, entry] of widgetEls) if (!seen.has(id)) { entry.el.remove(); widgetEls.delete(id); }
   $('dash-empty').hidden = list.length > 0;
   $('widget-count').textContent = list.length ? String(list.length) : '';
