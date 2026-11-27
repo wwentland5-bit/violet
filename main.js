@@ -949,6 +949,25 @@ function setupIpc() {
     if (dirs[which]) shell.openPath(dirs[which]);
   });
   ipcMain.handle('voice:wake', () => showWindow());
+  // One-click download of speech recognition + Piper + a voice (skips what's installed)
+  let voiceInstalling = false;
+  ipcMain.handle('voice:install', async () => {
+    if (voiceInstalling) return { ok: false, error: 'Already downloading.' };
+    voiceInstalling = true;
+    try {
+      const { installVoiceFeatures } = require('./voice-setup');
+      const installed = await installVoiceFeatures(voice, (p) => send('voice:install-progress', p));
+      // Pick sensible defaults the first time
+      const st = voice.status();
+      const patch = {};
+      if (!settings.sttModel && st.models.length) patch.sttModel = st.models[0].id;
+      if (!settings.piperVoice && st.voices.length) patch.piperVoice = st.voices[0].id;
+      if (Object.keys(patch).length) { Object.assign(settings, patch); saveSettings(); }
+      return { ok: true, installed };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    } finally { voiceInstalling = false; }
+  });
 
   ipcMain.handle('settings:get', () => settings);
 

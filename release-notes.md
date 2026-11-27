@@ -1,3 +1,2 @@
-- Update errors are now one short, readable line instead of a wall of text
-- Publishing fix: each version now has exactly one release, so updates download reliably
-- Includes 4.5.1: Violet finds Claude Code by itself, even if the path in Settings is old
+- Fixed Piper voices crashing with '"aɪ" is not a single codepoint' (newer voice files now work)
+- New: Settings → Voice → "Download voice features" sets up speech recognition, an English model and the Amy voice in one click

@@ -1092,9 +1092,42 @@ async function fillVoiceSettings() {
     ? 'Speech recognition not set up yet. Unzip whisper-bin-x64.zip into the speech folder and add a model (see README).'
     : st.models.length ? 'Speech recognition ready. Everything runs on your PC.'
       : 'Whisper found, but no model yet. Put a ggml-*.bin model (e.g. ggml-base.en.bin) in the speech folder.';
+  const missing = !st.whisper || !st.models.length || !st.piper || !st.voices.length;
+  if (!voiceInstallBusy) $('voice-install').hidden = !missing;
+}
+
+// ---- One-click voice download ----
+let voiceInstallBusy = false;
+function setupVoiceInstall() {
+  const btn = $('btn-voice-install');
+  const msg = $('voice-install-msg');
+  const bar = $('voice-install-bar');
+  const fill = $('voice-install-fill');
+  window.violet.voice.onInstallProgress((p) => {
+    msg.textContent = `${p.step}… ${p.detail || (p.percent ? p.percent + '%' : '')}`;
+    fill.style.width = `${p.percent || 0}%`;
+  });
+  btn.addEventListener('click', async () => {
+    voiceInstallBusy = true;
+    btn.disabled = true;
+    bar.hidden = false;
+    msg.textContent = 'Starting download…';
+    const r = await window.violet.voice.install();
+    voiceInstallBusy = false;
+    btn.disabled = false;
+    bar.hidden = true;
+    if (r.ok) {
+      settings = await window.violet.settings.get(); // picks up the new default model/voice
+      msg.textContent = r.installed.length ? `Installed: ${r.installed.join(', ')}. You're all set.` : 'Everything was already installed.';
+      fillVoiceSettings();
+    } else {
+      msg.textContent = `Couldn't finish: ${r.error} Click to try again; finished parts are kept.`;
+    }
+  });
 }
 
 function setupVoiceSettings() {
+  setupVoiceInstall();
   const sel = (id, key, after) => $(id).addEventListener('change', async (e) => { await saveSettings({ [key]: e.target.value }); if (after) after(); });
   sel('set-speakmode', 'speakMode');
   sel('set-ttsengine', 'ttsEngine', fillVoiceSettings);

@@ -1067,3 +1067,9 @@ body.panel .update-pill span { display: none; }
 .wn-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .wn-body { font-size: 13px; line-height: 1.55; max-height: 220px; overflow: auto; user-select: text; }
 .wn-body p, .wn-body ul { margin: 0 0 6px; }
+
+/* One-click voice download (Settings → Voice) */
+.voice-install { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 14px; align-items: flex-start; }
+.voice-install-bar { width: 100%; height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.voice-install-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent, #b06cff); transition: width .2s; }
+.voice-install[hidden], .voice-install-bar[hidden] { display: none; }

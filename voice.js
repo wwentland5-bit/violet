@@ -137,12 +137,40 @@ class VoiceEngines {
     const out = path.join(this.tmpDir, `tts-${this.ttsCounter++ % 4}.wav`);
     const lengthScale = (1 / Math.max(0.5, Math.min(2, Number(speed) || 1))).toFixed(2); // bigger = slower
     // Text goes through stdin (never the command line).
-    await run(exe, ['--model', voice.file, '--output_file', out, '--length_scale', lengthScale], {
+    const args = ['--model', voice.file, '--output_file', out, '--length_scale', lengthScale];
+    const config = this.piperConfig(voice.file);
+    if (config) args.push('--config', config);
+    await run(exe, args, {
       input: String(text).replace(/\s+/g, ' ').trim() + '\n',
       cwd: path.dirname(exe), // piper looks for espeak-ng-data next to itself
       timeout: 60000
     });
     return `${pathToFileURL(out).href}?v=${Date.now()}`;
+  }
+
+  /**
+   * Newer Piper voice files (made for Piper 1.5+) list combined sounds like "aɪ"
+   * in their phoneme map. The Piper program Violet uses (2023.11.14) only accepts
+   * single characters there and crashes with '"aɪ" is not a single codepoint'.
+   * The old Piper never produces those combined sounds, so we hand it a cleaned
+   * copy of the config without them. Returns that copy's path, or null when the
+   * original file is fine as it is.
+   */
+  piperConfig(modelFile) {
+    const src = `${modelFile}.json`;
+    let stat;
+    try { stat = fs.statSync(src); } catch { return null; }
+    const clean = path.join(this.tmpDir, `${path.basename(modelFile)}.${Math.round(stat.mtimeMs)}.clean.json`);
+    if (fs.existsSync(clean)) return clean; // already cleaned for this version of the file
+    try {
+      const cfg = JSON.parse(fs.readFileSync(src, 'utf8').replace(/^\uFEFF/, ''));
+      const map = cfg.phoneme_id_map || {};
+      const bad = Object.keys(map).filter(k => [...k].length !== 1);
+      if (!bad.length) return null;
+      for (const k of bad) delete map[k];
+      fs.writeFileSync(clean, JSON.stringify(cfg));
+      return clean;
+    } catch { return null; } // unreadable config: let Piper report its own error
   }
 
   /** whisper.cpp: 16 kHz mono WAV bytes -> text. */

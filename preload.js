@@ -46,6 +46,8 @@ contextBridge.exposeInMainWorld('violet', {
     transcribe: (wav, wake) => ipcRenderer.invoke('voice:transcribe', { wav, wake }),
     openFolder: (which) => ipcRenderer.invoke('voice:open-folder', which),
     wake: () => ipcRenderer.invoke('voice:wake'),
+    install: () => ipcRenderer.invoke('voice:install'),
+    onInstallProgress: (cb) => listen('voice:install-progress', cb),
     onHotkey: (cb) => listen('voice:hotkey', cb)
   },
   browser: {
