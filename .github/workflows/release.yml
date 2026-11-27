@@ -66,6 +66,24 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
           "
 
+      - name: Make sure the version tag exists on GitHub
+        # A published release needs a real tag. When the workflow is run by hand
+        # (no tag pushed), create it here. Tags pushed with GITHUB_TOKEN do not
+        # start this workflow again, so there is no double build.
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            TAG="v$INPUT_VERSION"
+            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+              echo "Tag $TAG already exists"
+            else
+              git tag "$TAG" "$GITHUB_SHA"
+              git push origin "$TAG"
+            fi
+          fi
+
       - name: Install packages
         run: npm install --no-fund --no-audit
 
