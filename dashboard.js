@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { net } = require('electron');
+const { checkYouTube, isYouTube } = require('./youtube');
 
 const TYPES = ['website', 'video', 'article', 'note', 'image', 'list', 'timer', 'link'];
 const SIZES = ['small', 'medium', 'large'];
@@ -55,6 +56,29 @@ function parseArticle(html, url) {
   };
 }
 
+/**
+ * Timer controls, from Violet ({"action":"update","id":"w3","paused":true})
+ * or from the widget's buttons. A paused timer keeps its time left in
+ * `pausedLeft` (seconds) and `endsAt` is recomputed on resume.
+ */
+function applyTimerControls(t, w) {
+  const now = Date.now();
+  const leftNow = () => (t.pausedLeft != null ? t.pausedLeft : Math.max(0, (t.endsAt - now) / 1000));
+  if (w.restart) { t.endsAt = now + (t.duration || 60) * 1000; t.pausedLeft = null; }
+  if ('addMinutes' in w || 'addSeconds' in w) {
+    const extra = Math.round((Number(w.addMinutes) || 0) * 60 + (Number(w.addSeconds) || 0));
+    if (extra) {
+      const left = Math.max(0, leftNow()) + extra;
+      t.duration = Math.max(t.duration || 0, Math.ceil(left));
+      if (t.pausedLeft != null) t.pausedLeft = Math.max(1, left);
+      else t.endsAt = now + Math.max(1, left) * 1000;
+    }
+  }
+  if (w.paused === true && t.pausedLeft == null && t.endsAt > now) t.pausedLeft = Math.max(1, (t.endsAt - now) / 1000);
+  if (w.paused === false && t.pausedLeft != null) { t.endsAt = now + t.pausedLeft * 1000; t.pausedLeft = null; }
+  if (t.pausedLeft == null) delete t.pausedLeft;
+}
+
 class Dashboard {
   constructor({ userDir, onChange }) {
     this.file = path.join(userDir, 'dashboard.json');
@@ -95,6 +119,7 @@ class Dashboard {
       out.endsAt = Date.now() + secs * 1000;
       out.duration = secs;
     }
+    if (type === 'timer') applyTimerControls(out, w);
     if (['website', 'video', 'article', 'image', 'link'].includes(type) && !out.url) throw new Error(`${type} needs a valid https url`);
     if (type === 'timer' && !out.endsAt) throw new Error('timer needs minutes or seconds');
     return out;
@@ -130,13 +155,27 @@ class Dashboard {
     this.persist();
   }
 
+  /** Buttons on a timer widget: pause | resume | restart | add1 */
+  timer(id, op) {
+    const w = this.data.widgets.find(x => x.id === id && x.type === 'timer');
+    if (!w) return;
+    const patch = { pause: { paused: true }, resume: { paused: false }, restart: { restart: true }, add1: { addMinutes: 1 } }[op];
+    if (!patch) return;
+    applyTimerControls(w, patch);
+    this.persist();
+  }
+
   resize(id, size) {
     const w = this.data.widgets.find(x => x.id === id);
     if (w && SIZES.includes(size)) { w.size = size; this.persist(); }
   }
 
-  /** Read <violet_widget> blocks from a reply. Returns a short log of what changed. */
-  applyTags(text) {
+  /**
+   * Read <violet_widget> blocks from a reply. Returns a short log of what changed.
+   * YouTube links are checked first: a removed / private / terminated video is
+   * never shown, and `onBlocked` is told so the user hears why.
+   */
+  async applyTags(text, onBlocked = () => {}) {
     const log = [];
     if (!text) return log;
     for (const m of text.matchAll(TAG_RE)) {
@@ -146,6 +185,17 @@ class Dashboard {
       for (const c of cmds.slice(0, 8)) {
         try {
           const action = c.action || 'add';
+          if ((action === 'add' || action === 'update') && c && typeof c.url === 'string' && isYouTube(c.url)) {
+            const check = await checkYouTube(cleanUrl(c.url));
+            if (!check.ok) {
+              const name = str(c.title, 80) || 'That video';
+              log.push(`blocked ${name}: ${check.reason}`);
+              onBlocked({ title: name, url: c.url, reason: check.reason });
+              continue;
+            }
+            // Use YouTube's real title when Violet gave a vague one
+            if (check.title && (!c.title || /^(video|youtube)$/i.test(String(c.title).trim()))) c.title = check.title;
+          }
           if (action === 'add') log.push(`added ${this.add(c).title}`);
           else if (action === 'update') log.push(`updated ${this.update(str(c.id, 20), c).title}`);
           else if (action === 'remove') { this.data.widgets = this.data.widgets.filter(w => w.id !== c.id); log.push(`removed ${c.id}`); }
@@ -181,7 +231,12 @@ class Dashboard {
   }
 
   promptBlock() {
-    const list = this.data.widgets.map(w => `${w.id}: ${w.type} "${w.title}"${w.url ? ` ${w.url}` : ''}`).join('\n') || '(none)';
+    const timerState = (w) => {
+      if (w.type !== 'timer') return '';
+      const left = w.pausedLeft != null ? w.pausedLeft : Math.max(0, (w.endsAt - Date.now()) / 1000);
+      return ` [${w.pausedLeft != null ? 'paused' : left > 0 ? 'running' : 'finished'}, ${Math.round(left)}s left]`;
+    };
+    const list = this.data.widgets.map(w => `${w.id}: ${w.type} "${w.title}"${w.url ? ` ${w.url}` : ''}${timerState(w)}`).join('\n') || '(none)';
     return 'VOICE DASHBOARD MODE: the user is talking to you by voice on a dashboard. Your reply is read aloud, so keep it SHORT, ' +
       'natural and conversational (1-3 sentences), with no markdown tables or long lists.\n' +
       'You control the widgets on the dashboard. To change them, add one or more blocks at the END of your reply:\n' +
@@ -190,6 +245,11 @@ class Dashboard {
       '- website: url (shows the live site)\n- video: url (YouTube, Vimeo, or a direct .mp4)\n' +
       '- article: url, optional summary (your 2-3 sentence summary)\n- note: text (Markdown)\n- image: url\n' +
       '- list: items (array of strings), e.g. a checklist\n- timer: minutes and/or seconds\n- link: url\n' +
+      'Timer controls (use the timer\'s id): pause {"action":"update","id":"w3","paused":true}, resume "paused":false, ' +
+      '"restart":true, add time "addMinutes":2. "Pause my timer" means the running timer; if there are several, ask which.\n' +
+      'YouTube: Violet checks every YouTube link before showing it and drops removed, private or terminated-channel videos. ' +
+      'So prefer well-known, recent uploads from active channels, and when you can, confirm with WebFetch on ' +
+      'https://www.youtube.com/oembed?format=json&url=<video url> (an error there means the video is gone).\n' +
       'Optional for all: "size": "small" | "medium" | "large". Update with {"action":"update","id":"w3",...}, ' +
       'remove with {"action":"remove","id":"w3"}, or {"action":"clear"} to remove everything.\n' +
       'Use WebSearch/WebFetch to find REAL urls. Never invent urls. Add widgets when they genuinely help (showing a video, ' +

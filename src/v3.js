@@ -512,8 +512,20 @@ function widgetBody(w) {
       t.dataset.ends = w.endsAt;
       t.dataset.duration = w.duration;
       t.dataset.id = w.id;
+      if (w.pausedLeft != null) t.dataset.pausedLeft = w.pausedLeft;
       t.innerHTML = '<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="tr-bg"/><circle cx="60" cy="60" r="52" class="tr-fg" pathLength="100"/></svg><div class="tr-time"></div>';
-      body.append(t);
+      // Controls: pause/resume, +1 minute, restart (Violet can do the same by voice)
+      const ctl = h('div', 'tr-controls');
+      const tb = (label, op) => {
+        const b = h('button', 'tr-btn', label);
+        b.addEventListener('click', (e) => { e.stopPropagation(); window.violet.dashboard.timer(w.id, op); });
+        return b;
+      };
+      const paused = w.pausedLeft != null;
+      const finished = !paused && w.endsAt <= Date.now();
+      if (!finished) ctl.append(tb(paused ? 'Resume' : 'Pause', paused ? 'resume' : 'pause'));
+      ctl.append(tb('+1 min', 'add1'), tb('Restart', 'restart'));
+      body.append(t, ctl);
       break;
     }
     case 'link': {
@@ -577,12 +589,15 @@ async function loadWidgets() { renderWidgets(await window.violet.dashboard.list(
 
 function tickTimers() {
   document.querySelectorAll('.w-timer').forEach(t => {
-    const left = (Number(t.dataset.ends) - Date.now()) / 1000;
+    const paused = t.dataset.pausedLeft !== undefined;
+    const left = paused ? Number(t.dataset.pausedLeft) : (Number(t.dataset.ends) - Date.now()) / 1000;
     const total = Number(t.dataset.duration) || 1;
-    t.querySelector('.tr-time').textContent = left > 0 ? fmtTime(left) : 'Done!';
+    t.classList.toggle('paused', paused);
+    if (left > 0) timersDone.delete(t.dataset.id); // restarted / extended timers can ring again
+    t.querySelector('.tr-time').textContent = left > 0 ? fmtTime(left) : 'Done';
     t.querySelector('.tr-fg').style.strokeDashoffset = String(100 - Math.max(0, Math.min(100, (left / total) * 100)));
     t.classList.toggle('done', left <= 0);
-    if (left <= 0 && !timersDone.has(t.dataset.id)) {
+    if (!paused && left <= 0 && !timersDone.has(t.dataset.id)) {
       timersDone.add(t.dataset.id);
       if (Date.now() - Number(t.dataset.ends) < 5000) { // only alert for timers that just finished
         const title = t.closest('.widget-card').querySelector('.w-title').textContent;

@@ -1,1 +1,5 @@
-- Fixed the "main.exe is deprecated" warning in voice mode: Violet now always uses whisper-cli.exe
+- New look: the dashboard is now a console, with Violet's words as a live readout beside your widgets
+- Timers can be paused, resumed, extended (+1 min) and restarted, by button or by voice ("pause my timer")
+- YouTube links are checked first: removed, private or terminated-channel videos are never shown, and dead links in chat are marked
+- New default voice: Lessac (high), downloaded in the background and switched to automatically
+- Wake-up message: choose what Violet says when you say "Hey Violet" (Settings → Voice)

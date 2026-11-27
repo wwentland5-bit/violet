@@ -1013,9 +1013,26 @@ async function onWakeSegment(wav) {
   VV.chime();
   await window.violet.voice.wake();
   // "Hey Violet, what's the weather" -> use the rest directly
-  if (hit.rest && hit.rest.split(/\s+/).length >= 3) sendMessage(hit.rest, { voice: true });
-  else toggleListening();
+  if (hit.rest && hit.rest.split(/\s+/).length >= 3) { sendMessage(hit.rest, { voice: true }); return; }
+  // Otherwise say the wake-up message (Settings → Voice), then listen
+  const line = wakeGreetingLine();
+  if (line) { try { await speaker.speak(line, settings); } catch { /* voice off: just listen */ } }
+  if (!busy && !listening) toggleListening();
 }
+
+/**
+ * Pick the wake-up message: options are separated by "|", one is chosen at
+ * random, and {greeting} becomes Good morning / Good afternoon / Good evening.
+ */
+function wakeGreetingLine() {
+  const raw = String(settings.wakeGreeting == null ? '' : settings.wakeGreeting).slice(0, 600);
+  const options = raw.split('|').map(x => x.trim()).filter(Boolean);
+  if (!options.length) return '';
+  const hr = new Date().getHours();
+  const greeting = hr < 5 ? 'Hey' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+  return options[Math.floor(Math.random() * options.length)].replace(/\{greeting\}/gi, greeting).slice(0, 200);
+}
+window.wakeGreetingLine = wakeGreetingLine;
 
 async function applyWakeSetting() {
   if (settings.wakeWord && !wake) {

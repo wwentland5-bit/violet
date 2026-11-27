@@ -86,13 +86,15 @@
         <!-- Voice dashboard -->
         <section class="view dash-view" id="dashboard-view" hidden>
           <div class="dash-top">
-            <div class="dash-title"><b>Dashboard</b><span>voice mode</span></div>
+            <div class="dash-title"><b>Dashboard</b><span>Talk, and Violet puts things here</span></div>
             <div class="spacer"></div>
             <label class="toggle" title="After Violet answers, it listens again automatically"><input type="checkbox" id="dash-handsfree"><span>Hands-free</span></label>
             <button class="btn small" id="dash-briefing" title="Weather, headlines and your reminders">☀ Briefing</button>
             <button class="btn ghost small" id="dash-clear">Clear widgets</button>
             <button class="icon-btn" id="dash-close" title="Back to chat (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           </div>
+          <div class="dash-console">
+          <aside class="dash-rail">
           <div class="dash-stage">
             <button class="dash-orb" id="dash-orb" title="Tap to talk">
               <span class="dash-glow"></span>
@@ -107,10 +109,14 @@
             </div>
           </div>
           <div class="dash-reminders" id="dash-reminders"></div>
+          </aside>
+          <div class="dash-board">
           <div class="dash-grid" id="dash-grid"></div>
           <div class="dash-empty" id="dash-empty">
-            <b>No widgets yet.</b> Try saying:
-            <span>"Show me a lo-fi music video"</span><span>"Pull up today's top tech news"</span><span>"Set a 10 minute pizza timer"</span><span>"Make me a grocery list for tacos"</span>
+            <b>Nothing on the board yet.</b> Try saying:
+            <span>"Show me a lo-fi music video"</span><span>"Pull up today's top tech news"</span><span>"Set a 10 minute pizza timer"</span><span>"Pause my timer"</span><span>"Make me a grocery list for tacos"</span>
+          </div>
+          </div>
           </div>
         </section>
 
@@ -314,6 +320,12 @@
         <h3>Wake word</h3>
         <label class="toggle"><input type="checkbox" id="set-wakeword"><span>Listen for "Hey Violet" (experimental)</span></label>
         <p class="hint">Uses your smallest speech model, entirely on your PC. It uses some CPU while you or your TV are talking.</p>
+        <label class="field field-stack">
+          <span>Wake-up message</span>
+          <textarea id="set-wakegreeting" rows="2" maxlength="600" spellcheck="false" placeholder="Leave empty for just the chime"></textarea>
+        </label>
+        <p class="hint">What Violet says when you wake it. Separate options with | and it picks one at random. {greeting} becomes Good morning, Good afternoon or Good evening.</p>
+        <div class="row-buttons"><button class="btn ghost" id="btn-test-wake">Hear it</button></div>
       </div>
 
       <div class="tab-panel" data-panel="general" hidden>
@@ -458,5 +470,6 @@
   <script src="v3.js"></script>
   <script src="v4.js"></script>
   <script src="v5.js"></script>
+  <script src="v6.js"></script>
 </body>
 </html>

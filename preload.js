@@ -26,7 +26,8 @@ contextBridge.exposeInMainWorld('violet', {
   },
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
-    set: (patch) => ipcRenderer.invoke('settings:set', patch)
+    set: (patch) => ipcRenderer.invoke('settings:set', patch),
+    onChanged: (cb) => listen('settings:changed', cb)
   },
   themes: {
     list: () => ipcRenderer.invoke('themes:list'),
@@ -39,6 +40,9 @@ contextBridge.exposeInMainWorld('violet', {
   browse: {
     // Violet drives its own browser
     start: (text, deep) => ipcRenderer.invoke('browse:start', { text, deep })
+  },
+  youtube: {
+    check: (url) => ipcRenderer.invoke('youtube:check', url)
   },
   voice: {
     status: () => ipcRenderer.invoke('voice:status'),
@@ -82,6 +86,8 @@ contextBridge.exposeInMainWorld('violet', {
     clear: () => ipcRenderer.invoke('dashboard:clear'),
     toggleItem: (id, i) => ipcRenderer.invoke('dashboard:toggle-item', id, i),
     resize: (id, size) => ipcRenderer.invoke('dashboard:resize', id, size),
+    timer: (id, op) => ipcRenderer.invoke('dashboard:timer', id, op),
+    onBlocked: (cb) => listen('dashboard:blocked', cb),
     open: (url) => ipcRenderer.invoke('dashboard:open', url),
     onChanged: (cb) => listen('dashboard:changed', cb)
   },

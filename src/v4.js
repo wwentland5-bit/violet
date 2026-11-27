@@ -471,9 +471,17 @@ function setupV4() {
 }
 
 // ---------- Startup (all versions, in order) ----------
-initV2().then(() => {
-  setupV3();
-  loadWidgets();
-  setupV4();
-  if (window.setupV5) window.setupV5(); // v5.js: updates
+// Each step is isolated: one failing feature must not switch off the ones after it.
+initV2().catch((err) => console.error('init failed', err)).then(() => {
+  const steps = [
+    ['v3', () => setupV3()],
+    ['widgets', () => loadWidgets()],
+    ['v4', () => setupV4()],
+    ['v5 updates', () => window.setupV5 && window.setupV5()],
+    ['v6 wake message, link checks', () => window.setupV6 && window.setupV6()]
+  ];
+  for (const [name, run] of steps) {
+    try { const r = run(); if (r && r.catch) r.catch((err) => console.error(`setup ${name} failed`, err)); }
+    catch (err) { console.error(`setup ${name} failed`, err); }
+  }
 });

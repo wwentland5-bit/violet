@@ -146,7 +146,8 @@ class VoiceEngines {
     const out = path.join(this.tmpDir, `tts-${this.ttsCounter++ % 4}.wav`);
     const lengthScale = (1 / Math.max(0.5, Math.min(2, Number(speed) || 1))).toFixed(2); // bigger = slower
     // Text goes through stdin (never the command line).
-    const args = ['--model', voice.file, '--output_file', out, '--length_scale', lengthScale];
+    // A short pause between sentences sounds more natural than Piper's default (none)
+    const args = ['--model', voice.file, '--output_file', out, '--length_scale', lengthScale, '--sentence_silence', '0.18'];
     const config = this.piperConfig(voice.file);
     if (config) args.push('--config', config);
     await run(exe, args, {

@@ -133,6 +133,10 @@ const DEFAULT_SETTINGS = {
   // v4
   classicUi: false,        // the original see-through floating panel (Ctrl+Shift+U)
   quickAskHotkey: 'Alt+Shift+A', // grab selected text from any app and ask about it
+  // What Violet says when you wake it ("Hey Violet"). Use | between options to vary it;
+  // {greeting} becomes Good morning / afternoon / evening. Empty = just the chime.
+  wakeGreeting: '{greeting}. What can I do for you?|Yes? I\'m listening.|I\'m here. Go ahead.',
+  defaultVoiceV2: false,          // set once Violet has switched you to the Lessac voice
   // v4.5: automatic updates from GitHub Releases
   updateRepo: '',          // "your-github-username" or "username/repo"; empty = use the repo GitHub baked in (wwentland5-bit/violet)
   autoUpdate: true,        // check + download updates in the background
@@ -761,7 +765,9 @@ function setupIpc() {
       const mem = memory.applyTags(res.text, settings.memoryAuto);
       if (mem.added.length || mem.removed.length) send('memory:changed', { added: mem.added.map(m => m.text), removed: mem.removed.length });
       // File changes Violet proposed (nothing is written until you click Apply)
-      dashboard.applyTags(res.text); // widgets Violet added/removed (sends dashboard:changed)
+      // Widgets Violet added/removed (sends dashboard:changed). YouTube links are
+      // verified first; dead ones are dropped and the panel is told why.
+      dashboard.applyTags(res.text, (b) => send('dashboard:blocked', b)).catch(() => {});
       const newReminders = reminders.applyTags(res.text);
       if (newReminders.length) send('reminder:added', newReminders);
       const changes = projects.extract(res.text);
@@ -849,6 +855,9 @@ function setupIpc() {
   ipcMain.handle('dashboard:clear', () => dashboard.clear());
   ipcMain.handle('dashboard:toggle-item', (_e, id, i) => dashboard.toggleItem(id, i));
   ipcMain.handle('dashboard:resize', (_e, id, size) => dashboard.resize(id, size));
+  ipcMain.handle('dashboard:timer', (_e, id, op) => dashboard.timer(String(id || ''), String(op || '')));
+  // Chat uses this to mark dead YouTube links
+  ipcMain.handle('youtube:check', (_e, url) => (typeof url === 'string' ? require('./youtube').checkYouTube(url) : { ok: true }));
   ipcMain.handle('dashboard:open', (_e, url) => { if (typeof url === 'string' && /^https?:\/\//i.test(url)) browser.open(url); });
 
   // ---------- Window ----------
@@ -1116,8 +1125,13 @@ if (!app.requestSingleInstanceLock()) {
     voice = new VoiceEngines({ userDir: USER_DIR });
     // Quietly swap Piper 1.5+ voices for versions this Piper pronounces right
     setTimeout(() => {
-      require('./voice-setup').repairVoices(voice)
+      const vs = require('./voice-setup');
+      vs.repairVoices(voice)
         .then((fixed) => { if (fixed.length) send('voice:install-progress', { step: `Voice fixed: ${fixed.join(', ')}`, percent: 100 }); })
+        .catch(() => {})
+        // New default voice (Lessac), downloaded quietly and switched to once
+        .then(() => vs.ensureDefaultVoice(voice, settings, (patch) => { Object.assign(settings, patch); saveSettings(); send('settings:changed', settings); }))
+        .then((switched) => { if (switched) send('voice:install-progress', { step: 'New voice ready: Lessac', percent: 100 }); })
         .catch(() => {});
     }, 5000);
     chats = new ChatStore({ userDir: USER_DIR });

@@ -6,7 +6,7 @@
 //   • whisper.cpp  (speech recognition program, ~4 MB zip)
 //   • ggml-base.en-q5_1.bin  (compressed English speech model, ~57 MB)
 //   • Piper        (custom-voice program, ~20 MB zip)
-//   • Amy          (a natural US English voice, ~63 MB)
+//   • Lessac (high) (Violet's default voice, ~114 MB)
 // Anything already installed is skipped.
 // ============================================================
 const { net } = require('electron');
@@ -15,6 +15,10 @@ const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
 const fs = require('fs');
 const path = require('path');
+
+// Violet's default voice: Lessac (high). A clear, natural US English voice and
+// the largest ("high") model size, so it sounds smoother than Amy (medium).
+const DEFAULT_VOICE = 'en_US-lessac-high.onnx';
 
 const URLS = {
   // whisper.cpp's newest tagged releases (v1.9.4+) ship no files, so "latest" 404s.
@@ -26,8 +30,8 @@ const URLS = {
   // Voices are pinned to the v1.0.0 tag. Newer voice files on "main" were retrained
   // for Piper 1.5+ (combined sounds like "aɪ") and mispronounce words in the Piper
   // program Violet uses ("Righte" instead of "right").
-  voiceOnnx: voiceUrl('en_US-amy-medium.onnx'),
-  voiceJson: voiceUrl('en_US-amy-medium.onnx.json')
+  voiceOnnx: voiceUrl(DEFAULT_VOICE),
+  voiceJson: voiceUrl(`${DEFAULT_VOICE}.json`)
 };
 
 /**
@@ -172,11 +176,38 @@ async function installVoiceFeatures(voice, onProgress = () => {}) {
     done.push('Piper');
   }
   if (!voice.listVoices().length) {
-    await download(URLS.voiceJson, path.join(voicesDir, 'en_US-amy-medium.onnx.json'), step('Downloading Amy voice'));
-    await download(URLS.voiceOnnx, path.join(voicesDir, 'en_US-amy-medium.onnx'), step('Downloading Amy voice'));
-    done.push('Amy voice');
+    await download(URLS.voiceJson, path.join(voicesDir, `${DEFAULT_VOICE}.json`), step('Downloading the Lessac voice'));
+    await download(URLS.voiceOnnx, path.join(voicesDir, DEFAULT_VOICE), step('Downloading the Lessac voice'));
+    done.push('Lessac voice');
   }
   return done;
 }
 
-module.exports = { installVoiceFeatures, repairVoices, voiceUrl };
+/**
+ * One-time upgrade to the new default voice. Downloads Lessac in the
+ * background (only if Piper is installed), then switches to it once, if you
+ * were still on the old default (Amy) or had no voice picked. Your own
+ * choice is never overridden after that.
+ * @returns {Promise<boolean>} true if the voice was switched
+ */
+async function ensureDefaultVoice(voice, settings, save) {
+  if (settings.defaultVoiceV2 || !voice.piperExe()) return false;
+  const dir = voice.status().dirs.voices;
+  const file = path.join(dir, DEFAULT_VOICE);
+  if (!fs.existsSync(file) || !fs.existsSync(`${file}.json`)) {
+    const tmp = path.join(voice.tmpDir, `dl-${DEFAULT_VOICE}`);
+    await download(URLS.voiceJson, `${tmp}.json`, () => {});
+    await download(URLS.voiceOnnx, tmp, () => {});
+    fs.copyFileSync(tmp, file);
+    fs.copyFileSync(`${tmp}.json`, `${file}.json`);
+    fs.rmSync(tmp, { force: true });
+    fs.rmSync(`${tmp}.json`, { force: true });
+  }
+  const wasDefault = !settings.piperVoice || settings.piperVoice === 'en_US-amy-medium.onnx';
+  const patch = { defaultVoiceV2: true };
+  if (wasDefault) patch.piperVoice = DEFAULT_VOICE;
+  save(patch);
+  return wasDefault;
+}
+
+module.exports = { installVoiceFeatures, repairVoices, ensureDefaultVoice, voiceUrl, DEFAULT_VOICE };
