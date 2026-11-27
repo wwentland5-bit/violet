@@ -16,7 +16,16 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 
 /** Breadth-first search for a file by name (case-insensitive), a few folders deep. */
+/**
+ * Find the first file matching `names`, IN PRIORITY ORDER: the whole tree is
+ * searched for names[0] before names[1] is considered. (whisper.cpp zips ship
+ * both whisper-cli.exe and a deprecated main.exe that only prints a warning.)
+ */
 function findFile(dir, names, depth = 3) {
+  if (names.length > 1) {
+    for (const n of names) { const hit = findFile(dir, [n], depth); if (hit) return hit; }
+    return null;
+  }
   const wanted = names.map(n => n.toLowerCase());
   let level = [dir];
   for (let d = 0; d <= depth && level.length; d++) {

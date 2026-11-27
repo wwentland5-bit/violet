@@ -1,2 +1,1 @@
-- Fixed "Download voice features" failing to get speech recognition (whisper.cpp changed where it publishes Windows files)
-- Smaller default speech model: base.en-q5_1 (57 MB) instead of 148 MB, nearly the same accuracy
+- Fixed the "main.exe is deprecated" warning in voice mode: Violet now always uses whisper-cli.exe
