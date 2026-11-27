@@ -1,0 +1,75 @@
+# ============================================================
+# Builds Violet for Windows and publishes it as a GitHub Release.
+# Violet on your PC checks these releases and updates itself.
+#
+# To publish an update:  push a tag like v4.6.0
+#   git tag v4.6.0 && git push origin v4.6.0
+# or run this workflow by hand from the Actions tab (type a version).
+# ============================================================
+name: Release Violet
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (like 4.6.0)'
+        required: true
+      notes:
+        description: "What's new (shown inside Violet after updating)"
+        required: false
+
+permissions:
+  contents: write   # lets the workflow create the release
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set version + publish target from this repo
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          VERSION="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
+          echo "Publishing version $VERSION to $GITHUB_REPOSITORY"
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+            p.version = process.argv[1];
+            p.build.publish = [{ provider: 'github', owner, repo, releaseType: 'release' }];
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
+            // Bake the update source into the app so updates work with no setup
+            fs.writeFileSync('update-source.json', JSON.stringify({ owner, repo }));
+          " "$VERSION"
+
+      - name: Release notes
+        shell: bash
+        env:
+          INPUT_NOTES: ${{ github.event.inputs.notes }}
+        run: |
+          # Notes come from the workflow input, or from release-notes.md in the repo
+          if [ -n "$INPUT_NOTES" ]; then echo "$INPUT_NOTES" > release-notes.md; fi
+          if [ ! -f release-notes.md ]; then echo "Bug fixes and improvements." > release-notes.md; fi
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.build.releaseInfo = { releaseNotesFile: 'release-notes.md' };
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
+          "
+
+      - name: Install packages
+        run: npm install --no-fund --no-audit
+
+      - name: Build installer and publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --x64 --publish always

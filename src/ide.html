@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Monaco needs inline styles and (optionally) workers -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; worker-src 'self' blob: data:">
+  <title>Violet Code</title>
+  <link rel="stylesheet" href="ide.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand"><span class="orb"></span>Violet Code</div>
+    <span class="proj" id="proj-name">No project</span>
+    <div class="spacer"></div>
+    <button class="tb-btn" id="btn-open">Open folder…</button>
+    <button class="tb-btn accent" id="btn-ask" title="Send the selection (or whole file) to Violet (Ctrl+Shift+A)">Ask Violet</button>
+    <div class="winctl">
+      <button id="w-min" title="Minimize"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button id="w-max" title="Maximize"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+      <button id="w-close" class="close" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="explorer">
+      <div class="ex-head"><span>Explorer</span><button id="btn-refresh" title="Refresh"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg></button></div>
+      <div class="tree" id="tree"></div>
+    </aside>
+    <section class="editor-area">
+      <div class="tabs" id="tabs"></div>
+      <div class="review-bar" id="review-bar" hidden>
+        <span id="review-label">Reviewing Violet's change</span>
+        <div class="spacer"></div>
+        <button class="tb-btn accent" id="rv-apply">Apply</button>
+        <button class="tb-btn" id="rv-reject">Reject</button>
+      </div>
+      <div class="disk-banner" id="disk-banner" hidden>This file changed on disk. <button id="btn-reload">Reload</button></div>
+      <div class="editor" id="editor"></div>
+      <div class="welcome" id="welcome">
+        <div class="orb big"></div>
+        <h1>Violet Code</h1>
+        <p id="welcome-text">Open a project folder to browse and edit files.<br>Violet can read this folder and suggest changes you approve.</p>
+        <button class="tb-btn accent" id="btn-open2">Open a project folder</button>
+        <p class="keys"><kbd>Ctrl+S</kbd> save · <kbd>Ctrl+W</kbd> close tab · <kbd>Ctrl+Shift+A</kbd> ask Violet</p>
+      </div>
+    </section>
+  </div>
+
+  <footer class="status">
+    <span id="st-path"></span>
+    <div class="spacer"></div>
+    <span id="st-pos"></span>
+    <span id="st-lang"></span>
+  </footer>
+  <div class="toast" id="toast"></div>
+
+  <script src="theme.js"></script>
+  <script src="../node_modules/monaco-editor/min/vs/loader.js"></script>
+  <script src="ide-renderer.js"></script>
+</body>
+</html>

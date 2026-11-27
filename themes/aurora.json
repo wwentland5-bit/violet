@@ -1,0 +1,23 @@
+{
+  "name": "Aurora",
+  "author": "Violet",
+  "colors": {
+    "bg": "rgba(10,8,22,0.9)",
+    "text": "#f5f3ff",
+    "muted": "#b4a9d6",
+    "accent": "#8b5cf6",
+    "accent2": "#22d3ee",
+    "border": "rgba(255,255,255,0.1)",
+    "surface": "rgba(10,8,22,0.45)",
+    "surface2": "rgba(255,255,255,0.12)",
+    "userBubble": "linear-gradient(135deg, #7c3aed, #0891b2)",
+    "assistantBubble": "rgba(10,8,22,0.5)",
+    "glow": "0 0 26px rgba(34,211,238,0.35)"
+  },
+  "radius": 20,
+  "background": {
+    "type": "aurora",
+    "colors": ["#7c3aed", "#db2777", "#0891b2"],
+    "speed": 16
+  }
+}

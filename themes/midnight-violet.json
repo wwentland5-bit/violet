@@ -1,0 +1,22 @@
+{
+  "name": "Midnight Violet",
+  "author": "Violet",
+  "colors": {
+    "bg": "transparent",
+    "text": "#f3eefe",
+    "muted": "#a99cc4",
+    "accent": "#a78bfa",
+    "accent2": "#e879f9",
+    "border": "rgba(255,255,255,0.09)",
+    "surface": "rgba(255,255,255,0.05)",
+    "surface2": "rgba(255,255,255,0.1)",
+    "userBubble": "linear-gradient(135deg, #8b5cf6, #c026d3)",
+    "assistantBubble": "rgba(255,255,255,0.045)"
+  },
+  "radius": 18,
+  "background": {
+    "type": "gradient",
+    "angle": 160,
+    "colors": ["rgba(30,18,56,0.95)", "rgba(16,10,30,0.95)"]
+  }
+}

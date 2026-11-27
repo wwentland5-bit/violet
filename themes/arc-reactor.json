@@ -1,0 +1,30 @@
+{
+  "name": "Arc Reactor",
+  "author": "Violet",
+  "colors": {
+    "bg": "rgba(3,10,18,0.95)",
+    "text": "#e6fbff",
+    "muted": "#7fb7c9",
+    "accent": "#22d3ee",
+    "accent2": "#7dd3fc",
+    "border": "rgba(34,211,238,0.22)",
+    "surface": "rgba(8,30,45,0.55)",
+    "surface2": "rgba(34,211,238,0.12)",
+    "userBubble": "linear-gradient(135deg, #0891b2, #2563eb)",
+    "userText": "#ffffff",
+    "assistantBubble": "rgba(6,24,38,0.7)",
+    "codeBg": "rgba(0,0,0,0.5)",
+    "glow": "0 0 26px rgba(34,211,238,0.45)"
+  },
+  "font": "Segoe UI Variable Display, Segoe UI, system-ui, sans-serif",
+  "radius": 14,
+  "background": {
+    "type": "gradient",
+    "angle": 180,
+    "colors": [
+      "rgba(2,8,16,0.98)",
+      "rgba(4,22,36,0.98)"
+    ]
+  },
+  "css": ".bg::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 30%,transparent 80%);animation:arcGrid 14s linear infinite}@keyframes arcGrid{to{background-position:0 32px,32px 0}}.bg::after{content:'';position:absolute;left:0;right:0;height:120px;top:-120px;pointer-events:none;background:linear-gradient(transparent,rgba(34,211,238,.08),transparent);animation:arcScan 7s linear infinite}@keyframes arcScan{to{top:110%}}.brand-name{letter-spacing:3px;text-transform:uppercase;font-size:12.5px;font-weight:700;color:#a5f3fc;text-shadow:0 0 10px rgba(34,211,238,.8)}.orb{background:radial-gradient(circle at 50% 50%,#fff 0%,#a5f3fc 18%,#22d3ee 40%,#0e7490 70%,#03121c 100%)}.ring.r1,.ring.r2{border-width:2px}.widget-card,.input-wrap,.mem-card{border-color:rgba(34,211,238,.25)}.app.paused .bg::before,.app.paused .bg::after{animation-play-state:paused!important}.app.no-motion .bg::before,.app.no-motion .bg::after{animation:none!important}"
+}

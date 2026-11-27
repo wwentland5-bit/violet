@@ -1,0 +1,32 @@
+{
+  "name": "Nebula",
+  "author": "Violet",
+  "colors": {
+    "bg": "rgba(5,4,18,0.94)",
+    "text": "#f4f0ff",
+    "muted": "#a89fd0",
+    "accent": "#c084fc",
+    "accent2": "#60a5fa",
+    "border": "rgba(192,132,252,0.18)",
+    "surface": "rgba(12,8,36,0.55)",
+    "surface2": "rgba(255,255,255,0.1)",
+    "userBubble": "linear-gradient(135deg, #a855f7 0%, #6366f1 55%, #3b82f6 100%)",
+    "userText": "#ffffff",
+    "assistantBubble": "rgba(12,8,36,0.6)",
+    "codeBg": "rgba(0,0,0,0.45)",
+    "glow": "0 0 28px rgba(192,132,252,0.45)"
+  },
+  "font": "Segoe UI Variable Display, Segoe UI, system-ui, sans-serif",
+  "radius": 20,
+  "background": {
+    "type": "aurora",
+    "colors": [
+      "#7e22ce",
+      "#1d4ed8",
+      "#be185d"
+    ],
+    "base": "radial-gradient(ellipse at 50% 120%, #1e1b4b 0%, #05040f 70%)",
+    "speed": 22
+  },
+  "css": ".bg::before,.bg::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1}.bg::before{background-image:radial-gradient(1.2px 1.2px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 28% 72%,#e9d5ff,transparent),radial-gradient(1.5px 1.5px at 44% 34%,#fff,transparent),radial-gradient(1px 1px at 63% 12%,#bfdbfe,transparent),radial-gradient(1.3px 1.3px at 78% 58%,#fff,transparent),radial-gradient(1px 1px at 91% 26%,#f5d0fe,transparent),radial-gradient(1.1px 1.1px at 8% 88%,#fff,transparent),radial-gradient(1px 1px at 52% 92%,#c7d2fe,transparent),radial-gradient(1.4px 1.4px at 85% 84%,#fff,transparent),radial-gradient(1px 1px at 36% 8%,#fff,transparent),radial-gradient(1px 1px at 70% 40%,#e0e7ff,transparent),radial-gradient(1.2px 1.2px at 20% 50%,#fff,transparent);animation:nebTwinkle 5s ease-in-out infinite alternate}.bg::after{background-image:radial-gradient(1px 1px at 18% 38%,#fff,transparent),radial-gradient(1.2px 1.2px at 58% 66%,#fff,transparent),radial-gradient(1px 1px at 82% 10%,#ddd6fe,transparent),radial-gradient(1.3px 1.3px at 40% 82%,#fff,transparent),radial-gradient(1px 1px at 95% 70%,#bfdbfe,transparent),radial-gradient(1px 1px at 4% 30%,#fff,transparent);animation:nebTwinkle 7s ease-in-out infinite alternate-reverse}@keyframes nebTwinkle{0%{opacity:.25}100%{opacity:1}}.brand-name{background:linear-gradient(90deg,#e9d5ff,#c084fc,#60a5fa,#e9d5ff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nebShine 8s linear infinite;font-weight:700;letter-spacing:.6px}@keyframes nebShine{to{background-position:300% 0}}.orb{background:radial-gradient(circle at 35% 30%,#fff 0%,#f5d0fe 14%,#c084fc 40%,#4f46e5 72%,#0b0620 100%)}.empty h1{background:linear-gradient(90deg,#f5f3ff,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}.msg.user{box-shadow:0 4px 20px rgba(139,92,246,.35)}.input-wrap:focus-within{border-color:#a78bfa;box-shadow:0 0 0 1px rgba(167,139,250,.4),0 0 24px rgba(96,165,250,.3)}.send{box-shadow:0 0 16px rgba(168,85,247,.45)}.app.paused .bg::before,.app.paused .bg::after,.app.paused::after{animation-play-state:paused!important}.app.no-motion .bg::before,.app.no-motion .bg::after{animation:none!important}"
+}

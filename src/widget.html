@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Violet widget</title>
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body>
+  <div class="widget" id="widget">
+    <div class="head">
+      <span class="label" id="label"></span>
+      <div class="head-actions">
+        <button id="btn-refresh" title="Refresh" hidden><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg></button>
+        <button id="btn-hide" title="Hide this widget"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </div>
+    <div class="body" id="body"></div>
+  </div>
+  <script src="theme.js"></script>
+  <script src="widget-renderer.js"></script>
+</body>
+</html>

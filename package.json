@@ -1,0 +1,51 @@
+{
+  "name": "violet",
+  "version": "4.5.0",
+  "description": "Violet - a personal Jarvis-style AI assistant powered by Claude Code",
+  "main": "main.js",
+  "author": "Wyatt Wentland",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": ">=39.0.0",
+    "electron-builder": ">=26.0.0"
+  },
+  "build": {
+    "appId": "com.wyatt.violet",
+    "productName": "Violet",
+    "files": [
+      "*.js",
+      "src/**/*",
+      "themes/**/*",
+      "assets/**/*",
+      "package.json",
+      "update-source.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Violet"
+    },
+    "portable": {
+      "artifactName": "Violet-Portable-${version}.exe"
+    },
+    "artifactName": "Violet-Setup-${version}.${ext}"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11",
+    "monaco-editor": "0.52.2"
+  }
+}

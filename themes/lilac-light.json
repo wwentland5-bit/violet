@@ -1,0 +1,20 @@
+{
+  "name": "Lilac Light",
+  "author": "Violet",
+  "colors": {
+    "bg": "rgba(250,246,255,0.96)",
+    "text": "#2a1f3d",
+    "muted": "#75669a",
+    "accent": "#7c3aed",
+    "accent2": "#c026d3",
+    "border": "rgba(60,30,110,0.12)",
+    "surface": "rgba(60,30,110,0.05)",
+    "surface2": "rgba(60,30,110,0.1)",
+    "userBubble": "linear-gradient(135deg, #7c3aed, #c026d3)",
+    "assistantBubble": "rgba(255,255,255,0.85)",
+    "codeBg": "rgba(60,30,110,0.07)",
+    "glow": "0 0 18px rgba(124,58,237,0.2)"
+  },
+  "radius": 18,
+  "background": { "type": "solid" }
+}

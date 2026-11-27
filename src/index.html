@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Strict security: only our own scripts run. Inline styles allowed so themes can add CSS. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: https: http:; media-src 'self' file: https: http:; font-src 'self' file: data:; frame-src https: http:">
+  <title>Violet</title>
+  <link rel="stylesheet" href="styles.css">
+  <style id="theme-css"></style>
+</head>
+<body class="panel">
+  <div class="app" id="app">
+    <!-- Theme background layers -->
+    <div class="bg" id="bg">
+      <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+      <video id="bg-video" muted loop playsinline></video>
+    </div>
+
+
+    <!-- Title bar (drag the window by this) -->
+    <header class="titlebar">
+      <button class="icon-btn" id="btn-sidebar" title="Chats &amp; memory (Ctrl+H)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+      <div class="brand">
+        <div class="orb small" id="header-orb"></div>
+        <span class="brand-name">Violet</span>
+      </div>
+      <select id="preset-select" class="preset-chip" title="Custom prompt"></select>
+      <div class="title-center" id="title-chat"></div>
+      <button class="update-pill" id="update-pill" hidden title="A new version of Violet is ready">⬆ <span id="update-pill-text">Update ready</span></button>
+      <div class="title-actions">
+        <button class="icon-btn" id="btn-palette" title="Command palette (Ctrl+K)"><svg viewBox="0 0 24 24"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 0 0 0-6z"/></svg></button>
+        <button class="icon-btn" id="btn-dashboard" title="Voice dashboard (Ctrl+D)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+        <button class="icon-btn" id="btn-browser" title="Violet's browser (Ctrl+B)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></button>
+        <button class="icon-btn" id="btn-editor" title="Violet Code editor (Ctrl+E)"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg></button>
+        <button class="icon-btn" id="btn-new" title="New chat (Ctrl+N)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="icon-btn" id="btn-settings" title="Settings (Ctrl+,)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        <button class="icon-btn" id="btn-mode" title="Full window / panel (F11)"><svg class="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><svg class="i-shrink" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg></button>
+        <span class="winctl-sep full-only"></span>
+        <button class="icon-btn full-only" id="btn-min" title="Minimize"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        <button class="icon-btn full-only" id="btn-max" title="Maximize"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+        <button class="icon-btn close-btn" id="btn-hide" title="Hide (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </header>
+
+    <div class="shell">
+      <!-- Sidebar: saved chats, project, memory. Always visible in full mode; a drawer in panel mode. -->
+      <aside class="sidebar" id="sidebar">
+        <button class="new-chat" id="btn-sidebar-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>New chat</span><kbd>Ctrl+N</kbd></button>
+        <div class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="chat-search" type="text" placeholder="Search chats"></div>
+        <div class="chat-list" id="chat-list"></div>
+        <div class="side-section">
+          <div class="side-label">Project</div>
+          <div id="side-project"></div>
+        </div>
+        <nav class="side-nav">
+          <button id="nav-dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span><span class="count" id="widget-count"></span></button>
+          <button id="nav-memory"><svg viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 10a3 3 0 0 0 1 2.2A3 3 0 0 0 6 17a3 3 0 0 0 3 3h0a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zM15 4a3 3 0 0 1 3 3v.2a3 3 0 0 1 2 2.8 3 3 0 0 1-1 2.2 3 3 0 0 1-1 4.8 3 3 0 0 1-3 3h0a3 3 0 0 1-3-3"/></svg><span>Memory</span><span class="count" id="memory-count"></span></button>
+          <button id="nav-settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
+        </nav>
+      </aside>
+      <div class="scrim" id="scrim"></div>
+
+      <div class="main">
+        <!-- Chat view -->
+        <main class="view" id="chat-view">
+          <div class="whats-new" id="whats-new" hidden>
+            <div class="wn-head"><b id="wn-title">✨ Violet updated</b><button class="icon-btn" id="wn-close" title="Dismiss">×</button></div>
+            <div class="wn-body" id="wn-body"></div>
+          </div>
+          <div class="messages" id="messages">
+            <div class="empty" id="empty">
+              <div class="hero-orb"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="orb big"></div></div>
+              <h1 id="greeting">Hey, I'm Violet.</h1>
+              <p>Ask me anything. Press <kbd id="hotkey-hint">Alt+Shift+V</kbd> anytime to call me.</p>
+              <div class="suggestions">
+                <button class="suggestion" data-prompt="What can you do?"><b>What can you do?</b><span>A quick tour of my powers</span></button>
+                <button class="suggestion" data-prompt="Help me debug some code"><b>Debug some code</b><span>Paste it in or open a project</span></button>
+                <button class="suggestion" data-prompt="Give me a quick Windows tip"><b>Windows tip</b><span>Something useful in 30 seconds</span></button>
+                <button class="suggestion" data-prompt="What do you remember about me?"><b>What do you remember?</b><span>See what's in my memory</span></button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <!-- Voice dashboard -->
+        <section class="view dash-view" id="dashboard-view" hidden>
+          <div class="dash-top">
+            <div class="dash-title"><b>Dashboard</b><span>voice mode</span></div>
+            <div class="spacer"></div>
+            <label class="toggle" title="After Violet answers, it listens again automatically"><input type="checkbox" id="dash-handsfree"><span>Hands-free</span></label>
+            <button class="btn small" id="dash-briefing" title="Weather, headlines and your reminders">☀ Briefing</button>
+            <button class="btn ghost small" id="dash-clear">Clear widgets</button>
+            <button class="icon-btn" id="dash-close" title="Back to chat (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="dash-stage">
+            <button class="dash-orb" id="dash-orb" title="Tap to talk">
+              <span class="dash-glow"></span>
+              <span class="dash-bars" id="dash-bars"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i><i style="--i:12"></i><i style="--i:13"></i><i style="--i:14"></i><i style="--i:15"></i><i style="--i:16"></i><i style="--i:17"></i><i style="--i:18"></i><i style="--i:19"></i><i style="--i:20"></i><i style="--i:21"></i><i style="--i:22"></i><i style="--i:23"></i><i style="--i:24"></i><i style="--i:25"></i><i style="--i:26"></i><i style="--i:27"></i><i style="--i:28"></i><i style="--i:29"></i><i style="--i:30"></i><i style="--i:31"></i><i style="--i:32"></i><i style="--i:33"></i><i style="--i:34"></i><i style="--i:35"></i><i style="--i:36"></i><i style="--i:37"></i><i style="--i:38"></i><i style="--i:39"></i></span>
+              <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+              <span class="orb huge"></span>
+            </button>
+            <div class="dash-state" id="dash-state">Tap the orb and start talking</div>
+            <div class="captions">
+              <div class="cap you" id="cap-you"></div>
+              <div class="cap violet" id="cap-violet"></div>
+            </div>
+          </div>
+          <div class="dash-reminders" id="dash-reminders"></div>
+          <div class="dash-grid" id="dash-grid"></div>
+          <div class="dash-empty" id="dash-empty">
+            <b>No widgets yet.</b> Try saying:
+            <span>"Show me a lo-fi music video"</span><span>"Pull up today's top tech news"</span><span>"Set a 10 minute pizza timer"</span><span>"Make me a grocery list for tacos"</span>
+          </div>
+        </section>
+
+        <!-- Memory view -->
+        <section class="view memory-view" id="memory-view" hidden>
+          <div class="mem-inner">
+            <div class="mem-head">
+              <div>
+                <h2><svg viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 10a3 3 0 0 0 1 2.2A3 3 0 0 0 6 17a3 3 0 0 0 3 3h0a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zM15 4a3 3 0 0 1 3 3v.2a3 3 0 0 1 2 2.8 3 3 0 0 1-1 2.2 3 3 0 0 1-1 4.8 3 3 0 0 1-3 3h0a3 3 0 0 1-3-3"/></svg> Memory</h2>
+                <p>Things Violet remembers about you. They're saved only on this PC, and you can edit or delete any of them.</p>
+              </div>
+              <div class="seg" id="mem-viewtoggle">
+                <button data-mv="tree" class="active">Tree</button>
+                <button data-mv="list">List</button>
+              </div>
+              <button class="icon-btn" id="btn-memory-close" title="Back to chat"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+            <div class="mem-add">
+              <input id="memory-input" type="text" maxlength="300" placeholder="Add something for Violet to remember… e.g. I use Windows 11 and VS Code">
+              <select id="memory-cat" title="Branch">
+                <option value="">Auto branch</option>
+                <option value="about">About you</option>
+                <option value="preferences">Preferences</option>
+                <option value="projects">Projects</option>
+                <option value="tech">Tech</option>
+                <option value="hobbies">Hobbies</option>
+                <option value="people">People</option>
+                <option value="places">Places</option>
+                <option value="other">Other</option>
+              </select>
+              <button class="btn" id="btn-memory-add">Add</button>
+            </div>
+            <div class="mem-tools">
+              <div class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="memory-search" type="text" placeholder="Search memories"></div>
+              <label class="toggle" title="Violet saves things you tell it on its own"><input type="checkbox" id="set-memauto"><span>Auto-save</span></label>
+            </div>
+            <div class="mem-tree" id="mem-tree" hidden>
+              <svg id="tree-svg" xmlns="http://www.w3.org/2000/svg"><defs>
+                <radialGradient id="tg-core" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#ffffff"/><stop offset="25%" stop-color="var(--accent-2)"/><stop offset="65%" stop-color="var(--accent)"/><stop offset="100%" stop-color="#1e0b3a"/></radialGradient>
+                <filter id="tg-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs><g id="tree-viewport"></g></svg>
+              <div class="tree-tip" id="tree-tip" hidden></div>
+              <div class="tree-controls">
+                <button id="tree-zoom-in" title="Zoom in">+</button>
+                <button id="tree-zoom-out" title="Zoom out">−</button>
+                <button id="tree-fit" title="Fit to screen">⤢</button>
+              </div>
+              <div class="tree-legend" id="tree-legend"></div>
+              <div class="tree-detail" id="tree-detail" hidden>
+                <div class="td-head"><span class="td-dot" id="td-dot"></span><b id="td-cat"></b><button class="icon-btn" id="td-close">×</button></div>
+                <textarea id="td-text" rows="4" maxlength="300"></textarea>
+                <div class="td-row">
+                  <select id="td-catsel">
+                    <option value="about">About you</option><option value="preferences">Preferences</option><option value="projects">Projects</option>
+                    <option value="tech">Tech</option><option value="hobbies">Hobbies</option><option value="people">People</option>
+                    <option value="places">Places</option><option value="other">Other</option>
+                  </select>
+                  <span class="td-meta" id="td-meta"></span>
+                </div>
+                <div class="row-buttons"><button class="btn small" id="td-save">Save</button><button class="btn danger small" id="td-delete">Delete</button></div>
+              </div>
+            </div>
+            <div class="mem-list" id="memory-list"></div>
+            <div class="mem-foot">
+              <span id="memory-total"></span>
+              <button class="btn danger" id="btn-memory-clear">Clear all</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Settings view -->
+    <section class="view settings" id="settings-view" hidden>
+      <div class="tabs">
+        <button class="tab active" data-tab="look">Look</button>
+        <button class="tab" data-tab="prompts">Prompts</button>
+        <button class="tab" data-tab="widgets">Widgets</button>
+        <button class="tab" data-tab="voice">Voice</button>
+        <button class="tab" data-tab="general">General</button>
+      </div>
+
+      <div class="tab-panel" data-panel="look">
+        <h3>Themes</h3>
+        <div class="theme-grid" id="theme-grid"></div>
+        <div class="row-buttons">
+          <button class="btn" id="btn-import-theme">Import theme…</button>
+          <button class="btn ghost" id="btn-open-themes">Open themes folder</button>
+        </div>
+        <p class="hint">Tip: drop a theme <code>.json</code> into the themes folder, or drag it onto this window.</p>
+
+        <h3>Window</h3>
+        <label class="field">
+          <span>Size</span>
+          <select id="set-size">
+            <option value="compact">Compact</option>
+            <option value="normal">Normal</option>
+            <option value="tall">Tall</option>
+          </select>
+        </label>
+        <label class="toggle"><input type="checkbox" id="set-lowpower"><span>Pause animations when hidden</span></label>
+        <label class="toggle"><input type="checkbox" id="set-reducemotion"><span>Reduce motion (turn animations off)</span></label>
+      </div>
+
+      <div class="tab-panel" data-panel="prompts" hidden>
+        <h3>Custom prompts</h3>
+        <p class="hint">Presets change how Violet talks. Pick one from the chip at the top anytime.</p>
+        <div class="prompt-list" id="prompt-list"></div>
+        <button class="btn ghost" id="btn-add-prompt">+ New prompt</button>
+        <div class="prompt-editor" id="prompt-editor" hidden>
+          <label class="field"><span>Name</span><input type="text" id="prompt-name" maxlength="30"></label>
+          <label class="field col"><span>Instructions</span>
+            <textarea id="prompt-text" rows="6" placeholder="e.g. Talk like a pirate and keep answers under 3 sentences."></textarea>
+          </label>
+          <div class="row-buttons">
+            <button class="btn" id="btn-save-prompt">Save</button>
+            <button class="btn danger" id="btn-delete-prompt">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="widgets" hidden>
+        <h3>Desktop widgets</h3>
+        <p class="hint">Drag widgets anywhere. Hover one and click × to hide it.</p>
+        <label class="toggle"><input type="checkbox" data-widget="clock"><span>Clock</span></label>
+        <label class="toggle"><input type="checkbox" data-widget="system"><span>System (CPU + memory)</span></label>
+        <label class="toggle"><input type="checkbox" data-widget="weather"><span>Weather</span></label>
+        <label class="toggle"><input type="checkbox" data-widget="notes"><span>Notes</span></label>
+        <label class="toggle"><input type="checkbox" data-widget="servers"><span>Server status</span></label>
+
+        <h3>Options</h3>
+        <label class="toggle"><input type="checkbox" id="set-widgets-ontop"><span>Keep widgets on top of windows</span></label>
+        <label class="toggle"><input type="checkbox" id="set-widgets-locked"><span>Lock widget positions</span></label>
+        <label class="toggle"><input type="checkbox" id="set-clock24"><span>24-hour clock</span></label>
+        <button class="btn ghost" id="btn-reset-widgets">Reset widget positions</button>
+
+        <h3>Weather</h3>
+        <label class="field"><span>City</span><input type="text" id="set-weather-city" placeholder="e.g. Sacramento"></label>
+        <label class="field">
+          <span>Units</span>
+          <select id="set-weather-units"><option value="f">°F / mph</option><option value="c">°C / km/h</option></select>
+        </label>
+
+        <h3>Servers</h3>
+        <label class="field col"><span>One per line: <code>Name | address</code></span>
+          <textarea id="set-servers" rows="4" placeholder="Plex | http://192.168.1.20:32400&#10;Router | 192.168.1.1&#10;Home Assistant | http://homeassistant.local:8123"></textarea>
+        </label>
+        <p class="hint">Green = answering. Checked every minute.</p>
+      </div>
+
+      <div class="tab-panel" data-panel="voice" hidden>
+        <h3>Speaking</h3>
+        <label class="field">
+          <span>Read replies aloud</span>
+          <select id="set-speakmode">
+            <option value="off">Never</option>
+            <option value="voice">When I talk</option>
+            <option value="always">Always</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Voice engine</span>
+          <select id="set-ttsengine">
+            <option value="windows">Windows voices (built in)</option>
+            <option value="piper">Piper (custom voices)</option>
+          </select>
+        </label>
+        <label class="field" id="row-winvoice"><span>Voice</span><select id="set-winvoice"></select></label>
+        <label class="field" id="row-pipervoice"><span>Voice</span><select id="set-pipervoice"></select></label>
+        <label class="field"><span>Speed <b id="speed-val">1.0×</b></span><input type="range" id="set-ttsspeed" min="0.5" max="2" step="0.1"></label>
+        <label class="field" id="row-pitch"><span>Pitch <b id="pitch-val">1.0</b></span><input type="range" id="set-ttspitch" min="0.5" max="2" step="0.1"></label>
+        <div class="row-buttons">
+          <button class="btn" id="btn-test-voice">Test voice</button>
+          <button class="btn ghost" id="btn-open-voices">Open voices folder</button>
+        </div>
+        <p class="hint" id="piper-status"></p>
+
+        <h3>Listening</h3>
+        <p class="hint" id="whisper-status"></p>
+        <label class="field"><span>Speech model</span><select id="set-sttmodel"></select></label>
+        <label class="field">
+          <span>Language</span>
+          <select id="set-sttlang">
+            <option value="en">English</option>
+            <option value="auto">Auto-detect</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+          </select>
+        </label>
+        <label class="toggle"><input type="checkbox" id="set-autosend"><span>Send automatically when I stop talking</span></label>
+        <label class="field">
+          <span>Talk hotkey</span>
+          <input type="text" id="set-voicehotkey" readonly title="Click, then press your new key combo">
+        </label>
+        <button class="btn ghost" id="btn-open-whisper">Open speech folder</button>
+
+        <h3>Wake word</h3>
+        <label class="toggle"><input type="checkbox" id="set-wakeword"><span>Listen for "Hey Violet" (experimental)</span></label>
+        <p class="hint">Uses your smallest speech model, entirely on your PC. It uses some CPU while you or your TV are talking.</p>
+      </div>
+
+      <div class="tab-panel" data-panel="general" hidden>
+        <h3>Hotkey</h3>
+        <label class="field">
+          <span>Show / hide</span>
+          <input type="text" id="set-hotkey" readonly title="Click, then press your new key combo">
+        </label>
+        <p class="hint">Click the box, then press a combo like Ctrl+Alt+V.</p>
+
+        <h3 id="updates-section">Updates</h3>
+        <div class="upd-card">
+          <div class="upd-top"><span class="upd-dot" id="upd-dot"></span><b id="upd-version">Violet</b><span class="upd-msg" id="upd-msg"></span></div>
+          <div class="upd-bar" id="upd-bar" hidden><i id="upd-bar-fill"></i></div>
+          <label class="field"><span>GitHub username</span><input type="text" id="set-updaterepo" placeholder="e.g. wyatt-codes  (or user/repo)" spellcheck="false"></label>
+          <p class="hint">Installed from GitHub? Updates are already set up, so you can leave this empty. Otherwise type your GitHub username (uses the <code>violet</code> repo) or <code>username/repo</code>.</p>
+          <label class="toggle"><input type="checkbox" id="set-autoupdate"><span>Check for and download updates automatically</span></label>
+          <label class="toggle"><input type="checkbox" id="set-autoinstall"><span>Install updates by itself while Violet is hidden and idle</span></label>
+          <div class="row-buttons">
+            <button class="btn ghost small" id="btn-upd-check">Check now</button>
+            <button class="btn small" id="btn-upd-install" hidden>Restart &amp; update</button>
+          </div>
+        </div>
+
+        <h3>Behavior</h3>
+        <label class="toggle"><input type="checkbox" id="set-classic"><span>Classic UI: the original see-through panel (Ctrl+Shift+U)</span></label>
+        <label class="field"><span>Quick Ask hotkey</span><input type="text" id="set-quickhotkey" readonly title="Click, then press your new key combo"></label>
+        <p class="hint">Select text in any app, press Quick Ask, and Violet opens with it attached.</p>
+        <label class="toggle"><input type="checkbox" id="set-startup"><span>Start Violet when Windows starts (installed app only)</span></label>
+        <label class="toggle"><input type="checkbox" id="set-ontop"><span>Always on top</span></label>
+        <label class="toggle"><input type="checkbox" id="set-hideblur"><span>Hide when I click away</span></label>
+        <label class="toggle"><input type="checkbox" id="set-websearch"><span>Let Violet search the web</span></label>
+
+        <h3>Browser</h3>
+        <label class="toggle"><input type="checkbox" id="set-browserlinks"><span>Open chat links in Violet's browser</span></label>
+        <label class="field">
+          <span>Search engine</span>
+          <select id="set-search">
+            <option value="duckduckgo">DuckDuckGo</option>
+            <option value="google">Google</option>
+            <option value="bing">Bing</option>
+            <option value="brave">Brave</option>
+          </select>
+        </label>
+        <label class="field"><span>Home page</span><input type="text" id="set-homepage" placeholder="https://duckduckgo.com"></label>
+        <label class="toggle"><input type="checkbox" id="set-browseshots"><span>Browse mode looks at page screenshots (smarter, uses more of your limit)</span></label>
+
+        <h3>Control mode</h3>
+        <label class="toggle"><input type="checkbox" id="set-askcontrol"><span>Ask before every control task</span></label>
+        <label class="field"><span>Max steps per task</span><input type="number" id="set-maxsteps" min="1" max="100"></label>
+        <label class="field">
+          <span>Action speed</span>
+          <select id="set-actiondelay">
+            <option value="150">Fast</option>
+            <option value="300">Normal</option>
+            <option value="600">Careful</option>
+          </select>
+        </label>
+        <p class="hint">Press <code>Esc</code> or your hotkey anytime to stop Violet and take back control.</p>
+
+        <h3>Claude</h3>
+        <label class="field"><span>Normal model</span><input type="text" id="set-normal-model" placeholder="default"></label>
+        <label class="field"><span>Deepthink model</span><input type="text" id="set-deep-model" placeholder="opus"></label>
+        <label class="field"><span>Claude command</span><input type="text" id="set-claude-path" placeholder="claude"></label>
+        <p class="hint">Leave "Claude command" as <code>claude</code> unless Violet says it can't find it.</p>
+      </div>
+    </section>
+
+        <!-- Composer -->
+    <footer class="composer" id="composer">
+      <div class="composer-inner">
+      <div class="status" id="status" hidden><span class="dots"><i></i><i></i><i></i></span><span id="status-text">Thinking…</span></div>
+      <div class="input-wrap">
+        <div class="project-chip" id="project-chip" hidden>
+          <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span><b>Project:</b> <span id="project-name"></span></span>
+          <button id="btn-project-editor" title="Open in Violet Code">Editor</button>
+          <button id="project-x" title="Close project">×</button>
+        </div>
+        <div class="page-chip" id="page-chip" hidden>
+          <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+          <span id="page-chip-title"></span>
+          <button id="page-chip-x" title="Remove page">×</button>
+        </div>
+        <div class="mode-banner" id="mode-banner" hidden></div>
+        <div class="slash-menu" id="slash-menu" hidden></div>
+        <textarea id="input" rows="1" placeholder="Ask Violet…"></textarea>
+        <div class="input-row">
+          <div class="pills">
+            <button class="pill" id="btn-deep" title="Deepthink: slower, smarter, uses more of your limits">
+              <svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
+              <span>Deep</span>
+            </button>
+            <button class="pill" id="btn-look" title="Look: attach a screenshot of your screen to your next message">
+              <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Look</span>
+            </button>
+            <button class="pill" id="btn-browse" title="Browse: Violet does it in its own browser (you can take over anytime)">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+              <span>Browse</span>
+            </button>
+            <button class="pill" id="btn-control" title="Control: let Violet use your mouse and keyboard (asks first)">
+              <svg viewBox="0 0 24 24"><path d="M4 3l7 17 2.5-7.5L21 10z"/></svg>
+              <span>Control</span>
+            </button>
+          </div>
+          <div class="right-btns">
+            <button class="mic" id="btn-mic" title="Talk to Violet (Alt+Shift+Space)">
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+            </button>
+          <button class="send" id="btn-send" title="Send (Enter)">
+            <svg class="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <svg class="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+          </button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </footer>
+      </div>
+    </div>
+
+    <!-- Command palette (Ctrl+K) -->
+    <div class="palette-wrap" id="palette" hidden>
+      <div class="palette">
+        <div class="pal-input"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="pal-q" type="text" placeholder="Type a command, chat, theme, or style…" autocomplete="off" spellcheck="false">
+          <kbd>Esc</kbd></div>
+        <div class="pal-list" id="pal-list"></div>
+        <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> run</span><span><kbd>/</kbd> in the chat box for quick commands</span></div>
+      </div>
+    </div>
+
+    <div class="drop-overlay" id="drop-overlay"><div>Drop theme to import</div></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script src="md.js"></script>
+  <script src="voice.js"></script>
+  <script src="renderer.js"></script>
+  <script src="v2.js"></script>
+  <script src="v3.js"></script>
+  <script src="v4.js"></script>
+  <script src="v5.js"></script>
+</body>
+</html>

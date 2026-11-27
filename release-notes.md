@@ -1,0 +1,3 @@
+- Automatic updates: Violet now updates itself from GitHub (Settings → General → Updates)
+- "Update ready" button in the title bar, plus a "What's new" card after each update
+- Command palette: "Check for updates", and the new /update command

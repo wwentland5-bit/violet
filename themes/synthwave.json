@@ -1,0 +1,24 @@
+{
+  "name": "Synthwave",
+  "author": "Violet",
+  "colors": {
+    "bg": "transparent",
+    "text": "#fff5fd",
+    "muted": "#f0b8e6",
+    "accent": "#f472b6",
+    "accent2": "#facc15",
+    "border": "rgba(255,255,255,0.14)",
+    "surface": "rgba(20,4,30,0.4)",
+    "surface2": "rgba(255,255,255,0.14)",
+    "userBubble": "linear-gradient(135deg, #db2777, #f59e0b)",
+    "assistantBubble": "rgba(20,4,30,0.45)",
+    "glow": "0 0 26px rgba(244,114,182,0.45)"
+  },
+  "radius": 16,
+  "background": {
+    "type": "animated-gradient",
+    "angle": 135,
+    "colors": ["rgba(46,9,73,0.96)", "rgba(112,26,117,0.96)", "rgba(30,27,75,0.96)", "rgba(131,24,67,0.96)"],
+    "speed": 14
+  }
+}

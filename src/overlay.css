@@ -1,0 +1,31 @@
+/* Click-through overlay shown while Violet controls the PC */
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif; }
+.frame {
+  position: fixed; inset: 0;
+  border: 3px solid rgba(167, 139, 250, 0.9);
+  box-shadow: inset 0 0 40px rgba(167, 139, 250, 0.55), inset 0 0 12px rgba(240, 171, 252, 0.6);
+  animation: glow 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes glow { 50% { border-color: rgba(240, 171, 252, 0.95); box-shadow: inset 0 0 60px rgba(240, 171, 252, 0.5), inset 0 0 16px rgba(167, 139, 250, 0.7); } }
+.pill {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  max-width: 70vw;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(18, 12, 30, 0.92);
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.4);
+  color: #f3eefe; font-size: 13px;
+  white-space: nowrap;
+}
+#text { overflow: hidden; text-overflow: ellipsis; }
+.orb {
+  width: 14px; height: 14px; flex: none; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #f0abfc 20%, #a78bfa 55%, #4c1d95);
+  animation: pulse 0.9s ease-in-out infinite;
+}
+@keyframes pulse { 50% { transform: scale(1.25); filter: brightness(1.3); } }
+kbd { font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); }
+.stop { color: #a99cc4; font-size: 12px; margin-left: -4px; }

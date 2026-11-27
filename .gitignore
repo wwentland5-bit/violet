@@ -1,0 +1,5 @@
+node_modules/
+dist/
+setup-log.txt
+update-source.json
+*.log

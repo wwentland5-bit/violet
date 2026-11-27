@@ -1,0 +1,83 @@
+/* Violet Browser toolbar. Total height must equal TOOLBAR_H (84px) in browser.js */
+:root {
+  --bg: rgba(18,12,30,0.96); --panel-bg: #140e22; --surface: rgba(255,255,255,0.06); --surface-2: rgba(255,255,255,0.1);
+  --text: #f3eefe; --muted: #a99cc4; --accent: #a78bfa; --accent-2: #f0abfc; --border: rgba(255,255,255,0.1);
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 84px; overflow: hidden; background: #120c1e; font-family: var(--font); color: var(--text); font-size: 13px; user-select: none; }
+body { background: var(--panel-bg); }
+svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+button { font: inherit; color: inherit; }
+
+/* Row 1 */
+.tabbar { height: 38px; display: flex; align-items: flex-end; padding: 0 0 0 8px; -webkit-app-region: drag; }
+.tabs { display: flex; gap: 2px; min-width: 0; overflow: hidden; }
+.tab {
+  -webkit-app-region: no-drag;
+  display: flex; align-items: center; gap: 7px;
+  width: 200px; min-width: 60px; flex-shrink: 1;
+  height: 32px; padding: 0 8px 0 10px;
+  border-radius: 10px 10px 0 0;
+  color: var(--muted);
+  cursor: default;
+  transition: background 0.15s;
+}
+.tab:hover { background: var(--surface); }
+.tab.active { background: var(--surface-2); color: var(--text); }
+.tab img, .tab .fav { width: 14px; height: 14px; flex: none; border-radius: 3px; }
+.tab .fav { background: linear-gradient(135deg, var(--accent), var(--accent-2)); opacity: 0.6; }
+.tab .fav.loading { opacity: 1; border-radius: 50%; animation: spin 0.8s linear infinite; background: conic-gradient(var(--accent), transparent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tab .title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab .x { border: none; background: none; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; opacity: 0.6; cursor: pointer; }
+.tab .x:hover { opacity: 1; background: var(--surface-2); }
+.tab .x svg { width: 12px; height: 12px; }
+.tab-new { -webkit-app-region: no-drag; border: none; background: none; width: 30px; height: 30px; margin: 0 0 1px 4px; border-radius: 8px; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.tab-new:hover { background: var(--surface); color: var(--text); }
+.drag-space { flex: 1; height: 100%; }
+.winctl { -webkit-app-region: no-drag; display: flex; height: 38px; align-self: flex-start; }
+.winctl button { width: 46px; border: none; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.winctl button:hover { background: var(--surface-2); color: var(--text); }
+.winctl button.close:hover { background: #e81123; color: #fff; }
+.winctl svg { width: 14px; height: 14px; }
+
+/* Row 2 */
+.navbar { height: 46px; display: flex; align-items: center; gap: 4px; padding: 0 8px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.nav { border: none; background: none; width: 32px; height: 32px; border-radius: 9px; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.nav:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.nav:disabled { opacity: 0.3; cursor: default; }
+.nav .i-stop { display: none; }
+.nav.loading .i-reload { display: none; }
+.nav.loading .i-stop { display: block; }
+.address { flex: 1; display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 6px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); transition: border-color 0.15s, box-shadow 0.15s; }
+.address:focus-within { border-color: var(--accent); box-shadow: 0 0 16px rgba(167,139,250,0.25); }
+.address .lock { color: var(--muted); flex: none; width: 13px; height: 13px; }
+.address .lock.secure { color: #4ade80; }
+#address { flex: 1; border: none; outline: none; background: none; color: var(--text); font: inherit; user-select: text; }
+#address::placeholder { color: var(--muted); }
+.ask {
+  display: flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 14px;
+  border: none; border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ask:hover { transform: translateY(-1px); box-shadow: 0 0 18px rgba(167,139,250,0.45); }
+.ask .orb { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, rgba(255,255,255,0.4) 40%, rgba(0,0,0,0.25)); }
+.loadbar { position: fixed; left: 0; bottom: 0; height: 2px; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s, opacity 0.3s; opacity: 0; }
+.loadbar.on { width: 70%; opacity: 1; transition: width 4s ease-out; }
+
+/* Agent bar: shown while Violet drives */
+.agentbar { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--accent); box-shadow: 0 0 16px rgba(167,139,250,0.3); max-width: 46%; }
+.agentbar.paused { border-color: #f59e0b; box-shadow: 0 0 16px rgba(245,158,11,0.3); }
+.agent-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--accent-2); animation: pulse 1s ease-in-out infinite; }
+.agentbar.paused .agent-dot { background: #f59e0b; animation: none; }
+@keyframes pulse { 50% { transform: scale(1.4); opacity: 0.6; } }
+.agent-status { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+.agent-btn { flex: none; height: 26px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 12px; }
+.agent-btn.primary { border: none; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 600; }
+.agent-btn:hover { filter: brightness(1.1); }
+body.locked .navbar .nav, body.locked #address { opacity: 0.45; pointer-events: none; }
+[hidden] { display: none !important; }

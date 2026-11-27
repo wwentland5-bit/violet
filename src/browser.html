@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: http: data:">
+  <title>Violet Browser</title>
+  <link rel="stylesheet" href="browser.css">
+</head>
+<body>
+  <!-- Row 1: tabs + window controls (drag the window by the empty space) -->
+  <div class="tabbar">
+    <div class="tabs" id="tabs"></div>
+    <button class="tab-new" id="btn-newtab" title="New tab (Ctrl+T)">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="drag-space"></div>
+    <div class="winctl">
+      <button id="btn-min" title="Minimize"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button id="btn-max" title="Maximize"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+      <button id="btn-close" class="close" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Row 2: navigation + address + Ask Violet -->
+  <div class="navbar">
+    <button class="nav" id="btn-back" title="Back (Alt+Left)"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button class="nav" id="btn-fwd" title="Forward (Alt+Right)"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="nav" id="btn-reload" title="Reload (F5)">
+      <svg class="i-reload" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>
+      <svg class="i-stop" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <button class="nav" id="btn-home" title="Home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 10v10h12V10"/></svg></button>
+    <form class="address" id="address-form">
+      <svg class="lock" id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <input id="address" type="text" spellcheck="false" placeholder="Search or type a web address">
+    </form>
+    <button class="ask" id="btn-ask" title="Send this page to Violet's chat">
+      <span class="orb"></span>Ask Violet
+    </button>
+    <!-- Shown while Violet is driving -->
+    <div class="agentbar" id="agentbar" hidden>
+      <span class="agent-dot"></span>
+      <span class="agent-status" id="agent-status">Violet is browsing…</span>
+      <button class="agent-btn primary" id="btn-takeover">Take control</button>
+      <button class="agent-btn primary" id="btn-giveback" hidden>Let Violet continue</button>
+      <button class="agent-btn" id="btn-agent-stop" title="Stop Violet">Stop</button>
+    </div>
+  </div>
+  <div class="loadbar" id="loadbar"></div>
+
+  <script src="theme.js"></script>
+  <script src="browser-renderer.js"></script>
+</body>
+</html>
