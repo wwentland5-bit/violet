@@ -14,7 +14,7 @@ function listen(channel, cb) {
 
 contextBridge.exposeInMainWorld('violet', {
   chat: {
-    send: (text, deep, withScreen, attachPage, dash) => ipcRenderer.invoke('chat:send', { text, deep, withScreen, attachPage, dash }),
+    send: (text, deep, withScreen, attachPage, dash, images) => ipcRenderer.invoke('chat:send', { text, deep, withScreen, attachPage, dash, images }),
     stop: () => ipcRenderer.invoke('chat:stop'),
     reset: () => ipcRenderer.invoke('chat:new'),
     onEvent: (cb) => listen('chat:event', cb)

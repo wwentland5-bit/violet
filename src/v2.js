@@ -195,7 +195,7 @@ async function renderChat(chat) {
   const changeIds = [];
   for (const m of msgs) {
     if (m.role === 'user') {
-      addUserMessage(m.text);
+      addUserMessage(m.text, m.images);
       continue;
     }
     current = addAssistantMessage(m.deep, m.kind);

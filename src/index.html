@@ -413,7 +413,9 @@
         </div>
         <div class="mode-banner" id="mode-banner" hidden></div>
         <div class="slash-menu" id="slash-menu" hidden></div>
+        <div class="attach-strip" id="attach-strip" hidden></div>
         <textarea id="input" rows="1" placeholder="Ask Violet…"></textarea>
+        <input type="file" id="photo-input" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
         <div class="input-row">
           <div class="pills">
             <button class="pill" id="btn-deep" title="Deepthink: slower, smarter, uses more of your limits">
@@ -423,6 +425,10 @@
             <button class="pill" id="btn-look" title="Look: attach a screenshot of your screen to your next message">
               <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
               <span>Look</span>
+            </button>
+            <button class="pill" id="btn-photo" title="Add photos (or paste with Ctrl+V, or drop them here)">
+              <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>
+              <span>Photo</span>
             </button>
             <button class="pill" id="btn-browse" title="Browse: Violet does it in its own browser (you can take over anytime)">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>

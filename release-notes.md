@@ -1,1 +1,3 @@
-- Fixed: the chat box could be hidden below the screen or behind the taskbar. Violet's window now always fits fully on screen, and re-fits when display scaling, resolution or monitors change
+- Send photos to Violet: click Photo, paste with Ctrl+V, or drag images into the chat (up to 6 per message)
+- Big photos are shrunk automatically so they send fast, and they stay visible in your chat history
+- Send a photo with no text and Violet tells you what it sees

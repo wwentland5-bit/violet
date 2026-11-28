@@ -225,11 +225,121 @@ function showStatus(text) {
   statusEl.hidden = false;
 }
 
-function addUserMessage(text) {
+function addUserMessage(text, images = []) {
   const el = document.createElement('div');
   el.className = 'msg user';
-  el.textContent = text;
+  const safe = (Array.isArray(images) ? images : []).filter(u => typeof u === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(u));
+  if (safe.length) {
+    const row = document.createElement('div');
+    row.className = 'msg-photos';
+    for (const src of safe.slice(0, 8)) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = 'Attached photo';
+      row.append(img);
+    }
+    el.append(row);
+  }
+  const t = document.createElement('div');
+  t.className = 'msg-text';
+  t.textContent = text;
+  el.append(t);
   messagesEl.append(el);
+}
+
+// ============================================================
+// Photos: attach with the Photo button, Ctrl+V or drag-and-drop.
+// Big photos are shrunk here (max 1600 px) so they upload fast;
+// a small thumbnail is kept so the chat history can show them.
+// ============================================================
+const MAX_PHOTOS = 6;
+let pendingImages = []; // { dataUrl, thumb, name }
+
+async function shrinkImage(file, maxSide, quality) {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); // transparent PNGs get a white background in JPEG
+  g.drawImage(bmp, 0, 0, w, h);
+  bmp.close && bmp.close();
+  return c.toDataURL('image/jpeg', quality);
+}
+
+async function addPhotos(files) {
+  const images = [...files].filter(f => f && /^image\//.test(f.type));
+  if (!images.length) return;
+  for (const f of images) {
+    if (pendingImages.length >= MAX_PHOTOS) { toast(`Up to ${MAX_PHOTOS} photos per message.`); break; }
+    if (f.size > 40 * 1024 * 1024) { toast(`${f.name || 'That photo'} is too big (over 40 MB).`); continue; }
+    try {
+      const dataUrl = await shrinkImage(f, 1600, 0.88);
+      const thumb = await shrinkImage(f, 220, 0.7);
+      pendingImages.push({ dataUrl, thumb, name: f.name || 'photo' });
+    } catch {
+      toast(`Couldn't read ${f.name || 'that image'}. Try a PNG or JPG.`);
+    }
+  }
+  renderAttachStrip();
+  inputEl.focus();
+}
+
+function renderAttachStrip() {
+  const strip = $('attach-strip');
+  strip.innerHTML = '';
+  strip.hidden = !pendingImages.length;
+  pendingImages.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'attach-item';
+    const img = document.createElement('img');
+    img.src = p.thumb;
+    img.alt = p.name;
+    img.title = p.name;
+    const x = document.createElement('button');
+    x.className = 'attach-x';
+    x.title = 'Remove photo';
+    x.textContent = '×';
+    x.addEventListener('click', () => { pendingImages.splice(i, 1); renderAttachStrip(); });
+    item.append(img, x);
+    strip.append(item);
+  });
+  $('btn-photo').classList.toggle('active', pendingImages.length > 0);
+}
+
+/** True when everything being dragged is an image (so it's a photo, not a theme file). */
+function draggingImages(e) {
+  const items = [...(e.dataTransfer?.items || [])].filter(it => it.kind === 'file');
+  return items.length > 0 && items.every(it => /^image\//.test(it.type));
+}
+
+function setupPhotos() {
+  const picker = $('photo-input');
+  $('btn-photo').addEventListener('click', () => picker.click());
+  picker.addEventListener('change', () => { addPhotos(picker.files); picker.value = ''; });
+  // Paste a screenshot or copied image straight into the box
+  inputEl.addEventListener('paste', (e) => {
+    const files = [...(e.clipboardData?.items || [])].filter(it => it.kind === 'file' && /^image\//.test(it.type)).map(it => it.getAsFile());
+    if (files.length) { e.preventDefault(); addPhotos(files); }
+  });
+  // Drop photos anywhere in the chat. (Also stops Electron from opening a
+  // dropped file as a page, which would replace Violet's window.)
+  const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  document.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    document.body.classList.toggle('drop-photos', !chatView.hidden);
+    if (!chatView.hidden) inputEl.placeholder = 'Drop photos to attach them';
+  });
+  const resetDrop = () => { document.body.classList.remove('drop-photos'); updateModeUi(); };
+  document.addEventListener('dragleave', (e) => { if (!e.relatedTarget) resetDrop(); });
+  document.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    resetDrop();
+    if (!chatView.hidden) addPhotos(e.dataTransfer.files);
+  });
 }
 
 function addAssistantMessage(isDeep, kind = '') {
@@ -410,12 +520,19 @@ function finishMessage(stopped, { speak = true } = {}) {
 
 async function sendMessage(text, opts = {}) {
   text = (text || '').trim();
+  const photos = opts.voice ? [] : pendingImages.slice();
+  if (!text && photos.length) text = photos.length > 1 ? 'What do you see in these photos?' : 'What do you see in this photo?';
   if (!text || busy || waitingForPermission) return;
+  if (photos.length && (browse || control)) {
+    toast('Photos go with a normal chat message. Turn off Browse/Control to send them.', 5000);
+    return;
+  }
   lastInputVoice = !!opts.voice; // decides whether the reply is read aloud ("when I talk")
   speaker.stop();
 
   emptyEl.hidden = true;
-  addUserMessage(text);
+  addUserMessage(text, photos.map(p => p.thumb));
+  if (photos.length) { pendingImages = []; renderAttachStrip(); }
   inputEl.value = '';
   autoGrow();
   scrollToBottom();
@@ -472,12 +589,13 @@ async function sendMessage(text, opts = {}) {
 
   current = addAssistantMessage(deep);
   setBusy(true);
-  showStatus(withScreen ? 'Looking at your screen…' : deep ? 'Thinking deeply…' : 'Thinking…');
+  showStatus(withScreen ? 'Looking at your screen…' : photos.length ? 'Looking at your photo…' : deep ? 'Thinking deeply…' : 'Thinking…');
   scrollToBottom();
 
   const attachPage = pageAttached;
   if (attachPage) { setPageChip(null); updateModeUi(); } // the page goes with this message only
-  const res = await window.violet.chat.send(text, deep, withScreen, attachPage, !!window.dashActive);
+  const res = await window.violet.chat.send(text, deep, withScreen, attachPage, !!window.dashActive,
+    photos.map(p => ({ dataUrl: p.dataUrl, thumb: p.thumb, name: p.name })));
   if (!res.ok) {
     current.raw = res.error || 'Could not send.';
     current.el.classList.add('error');
@@ -800,7 +918,7 @@ function setupSettingsControls() {
 function setupDragDrop() {
   let depth = 0;
   window.addEventListener('dragenter', (e) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
+    if (!e.dataTransfer.types.includes('Files') || draggingImages(e)) return; // photos are handled by setupPhotos()
     depth++;
     appEl.classList.add('dragging');
   });
@@ -814,7 +932,7 @@ function setupDragDrop() {
     depth = 0;
     appEl.classList.remove('dragging');
     const file = e.dataTransfer.files[0];
-    if (!file) return;
+    if (!file || /^image\//.test(file.type)) return; // a photo, not a theme
     handleImportResult(await window.violet.themes.importFile(file));
   });
 }
@@ -824,6 +942,7 @@ function setupDragDrop() {
 // ============================================================
 function setupEvents() {
   inputEl.addEventListener('input', autoGrow);
+  setupPhotos();
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
