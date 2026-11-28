@@ -1,4 +1,1 @@
-- Free-move dashboard: drag widgets anywhere, resize them from the bottom-right corner, and use "Tidy up" to line them back up
-- Violet can place widgets anywhere too: "put the video top right", "move the timer next to my notes"
-- Violet's replies no longer pick up your personal Claude Code plugins (no more "Taking this as…" lines)
-- Personal prompts: drop a *.prompt.json file in Violet's data folder and it shows up in the prompt picker (stays on your PC)
+- Fixed: the chat box could be hidden below the screen or behind the taskbar. Violet's window now always fits fully on screen, and re-fits when display scaling, resolution or monitors change

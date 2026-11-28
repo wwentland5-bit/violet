@@ -1,6 +1,6 @@
 {
   "name": "violet",
-  "version": "4.6.3",
+  "version": "4.6.4",
   "description": "Violet - a personal Jarvis-style AI assistant powered by Claude Code",
   "main": "main.js",
   "author": "Wyatt Wentland",

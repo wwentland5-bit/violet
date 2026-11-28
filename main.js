@@ -377,6 +377,29 @@ function defaultFullBounds() {
   return { x: a.x + Math.round((a.width - width) / 2), y: a.y + Math.round((a.height - height) / 2), width, height };
 }
 
+/**
+ * Make a window rectangle fit completely inside the usable part of a screen
+ * (the "work area": the screen minus the taskbar). Saved sizes/positions can
+ * be too big after a display-scaling or resolution change, which pushed the
+ * bottom of the window, where the chat box is, off the screen or behind the
+ * taskbar.
+ */
+function fitToScreen(b) {
+  const center = { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) };
+  const a = screen.getDisplayNearestPoint(center).workArea;
+  const width = Math.min(b.width, a.width);
+  const height = Math.min(b.height, a.height);
+  const x = Math.min(Math.max(b.x, a.x), a.x + a.width - width);
+  const y = Math.min(Math.max(b.y, a.y), a.y + a.height - height);
+  return { x, y, width, height };
+}
+
+function panelBounds() {
+  const { width, height } = getSize();
+  const { x, y } = getPosition();
+  return fitToScreen({ x, y, width, height });
+}
+
 function boundsOnScreen(b) {
   return b && screen.getAllDisplays().some(d => {
     const a = d.workArea;
@@ -398,7 +421,7 @@ function applyMode(mode) {
     win.setAlwaysOnTop(false);
     win.setSkipTaskbar(false);
     win.setMinimumSize(720, 480);
-    win.setBounds(boundsOnScreen(settings.fullBounds) ? settings.fullBounds : defaultFullBounds());
+    win.setBounds(fitToScreen(boundsOnScreen(settings.fullBounds) ? settings.fullBounds : defaultFullBounds()));
     if (settings.fullMaximized) win.maximize();
   } else {
     if (win.isMaximized()) win.unmaximize();
@@ -406,9 +429,7 @@ function applyMode(mode) {
     win.setMinimumSize(340, 440);
     win.setSkipTaskbar(true);
     win.setAlwaysOnTop(!!settings.alwaysOnTop);
-    const { width, height } = getSize();
-    const { x, y } = getPosition();
-    win.setBounds({ x, y, width, height });
+    win.setBounds(panelBounds());
   }
   send('window:mode', settings.windowMode);
 }
@@ -446,8 +467,7 @@ function getPosition() {
 }
 
 function createWindow() {
-  const { width, height } = getSize();
-  const { x, y } = getPosition();
+  const { x, y, width, height } = panelBounds();
 
   // Classic UI = the original see-through floating panel. A transparent window
   // can't resize well, so Classic is a fixed-size panel; switching rebuilds the window.
@@ -520,11 +540,10 @@ function setClassic(on) {
 
 function showWindow() {
   if (!win) return;
-  if (settings.windowMode !== 'full') {
-    const { x, y } = getPosition();
-    win.setPosition(x, y);
-  }
   if (win.isMinimized()) win.restore();
+  // Always keep the whole window (and the chat box at its bottom) on screen
+  if (settings.windowMode !== 'full') win.setBounds(panelBounds());
+  else if (!win.isMaximized() && !win.isFullScreen()) win.setBounds(fitToScreen(win.getBounds()));
   win.show();
   win.focus();
   send('window:focus-input');
@@ -1216,6 +1235,13 @@ if (!app.requestSingleInstanceLock()) {
 
     setupIpc();
     createWindow();
+    // Scaling / resolution / monitor changes: pull the window back fully on screen
+    const refit = () => {
+      if (!win || win.isDestroyed() || win.isMaximized() || win.isFullScreen()) return;
+      win.setBounds(fitToScreen(win.getBounds()));
+    };
+    screen.on('display-metrics-changed', refit);
+    screen.on('display-removed', refit);
     setupEmbeds();
     createTray();
     watchThemes();
